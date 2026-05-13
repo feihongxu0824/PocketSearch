@@ -24,6 +24,11 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<!-- Photo library access: required by photo_manager for gallery
+	     indexing. The read-only key is sufficient because we never modify
+	     or write user photos. -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Zvec Photo Search needs access to your photo library to index your photos locally and enable offline semantic search. No photos leave your device.</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

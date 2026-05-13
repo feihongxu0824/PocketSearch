@@ -93,6 +93,16 @@ On Android, the first launch will request **photo gallery permission**
 incremental cold-start sync (see *Cold-start sync* below) and indexing
 progress is shown in the status bar.
 
+On iOS, the project is build-verified (`flutter build ios --release
+--no-codesign` produces a 233 MB `Runner.app`). To install on a real
+device you need a free Apple Developer account: open
+`ios/Runner.xcworkspace` in Xcode, set your Team under *Signing &
+Capabilities*, then `flutter run`. The first launch shows the system
+photo-library permission dialog (declared in
+[`ios/Runner/Info.plist`](ios/Runner/Info.plist) as
+`NSPhotoLibraryUsageDescription`); after granting, the same cold-start
+sync runs.
+
 ### 4. Seed a Demo Gallery (optional)
 
 If the device gallery is empty (e.g. a fresh test phone) you can push a
