@@ -55,6 +55,10 @@ app.*.map.json
 assets/models/*.mnn
 assets/models/*.onnx
 
+# Demo dataset (~2 GB, 10k Unsplash photos). Regenerate via
+# `scripts/download_demo_dataset.py`. See `docs/demo-dataset.md`.
+/data/
+
 # iOS CocoaPods
 /ios/Pods/
 /ios/.symlinks/

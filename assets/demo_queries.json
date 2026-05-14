@@ -1,0 +1,106 @@
+{
+  "_comment": "Curated English queries for showcasing the photo search demo. Every query has been chosen to (a) hit a visually distinctive concept that MobileCLIP-S1 handles well and (b) have a high probability of returning multiple ground-truth matches when the candidate pool is the 10k Unsplash Lite subset produced by scripts/download_demo_dataset.py. Use these in screen recordings, README screenshots, and tweet GIFs.",
+  "_model": "MobileCLIP-S1 (English only). Chinese support is a roadmap item; see docs/blog-outline.md.",
+  "queries": [
+    {
+      "category": "nature",
+      "query": "sunset over the ocean",
+      "expected_count": "50+"
+    },
+    {
+      "category": "nature",
+      "query": "snowy mountain peak",
+      "expected_count": "40+"
+    },
+    {
+      "category": "nature",
+      "query": "dense green forest",
+      "expected_count": "60+"
+    },
+    {
+      "category": "weather",
+      "query": "rainy street at night",
+      "expected_count": "20+"
+    },
+    {
+      "category": "weather",
+      "query": "thick fog in the morning",
+      "expected_count": "20+"
+    },
+    {
+      "category": "city",
+      "query": "neon lights of a downtown skyline",
+      "expected_count": "30+"
+    },
+    {
+      "category": "city",
+      "query": "empty cobblestone street in europe",
+      "expected_count": "30+"
+    },
+    {
+      "category": "animals",
+      "query": "white cat sitting on a windowsill",
+      "expected_count": "15+"
+    },
+    {
+      "category": "animals",
+      "query": "golden retriever on the beach",
+      "expected_count": "15+"
+    },
+    {
+      "category": "animals",
+      "query": "bird in flight over water",
+      "expected_count": "20+"
+    },
+    {
+      "category": "food",
+      "query": "latte art on a cup of coffee",
+      "expected_count": "30+"
+    },
+    {
+      "category": "food",
+      "query": "fresh pizza on a wooden table",
+      "expected_count": "20+"
+    },
+    {
+      "category": "food",
+      "query": "colorful breakfast bowl with fruit",
+      "expected_count": "30+"
+    },
+    {
+      "category": "people",
+      "query": "person reading a book in a cafe",
+      "expected_count": "20+"
+    },
+    {
+      "category": "people",
+      "query": "couple walking on the beach at sunset",
+      "expected_count": "15+"
+    },
+    {
+      "category": "people",
+      "query": "smiling child playing outdoors",
+      "expected_count": "20+"
+    },
+    {
+      "category": "indoor",
+      "query": "cozy bedroom with warm lighting",
+      "expected_count": "25+"
+    },
+    {
+      "category": "indoor",
+      "query": "minimalist workspace with laptop",
+      "expected_count": "30+"
+    },
+    {
+      "category": "object",
+      "query": "vintage film camera",
+      "expected_count": "15+"
+    },
+    {
+      "category": "object",
+      "query": "open book on a table",
+      "expected_count": "25+"
+    }
+  ]
+}

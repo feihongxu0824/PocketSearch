@@ -143,22 +143,44 @@ full-resolution image.
 
 ### 4. Seed a Demo Gallery (optional)
 
-If the device gallery is empty (e.g. a fresh test phone) you can push a
-reproducible 220-image dataset from [Lorem Picsum](https://picsum.photos):
+For compelling demo recordings you want a **large, visually diverse**
+candidate pool — a real phone gallery is mostly chat screenshots and
+coupons, which makes even a perfect CLIP look bad. Two seed paths:
+
+**Recommended (1080p, ~10k photos, ~2 GB).** Use the Unsplash Lite
+dataset for the tweet GIF / blog screenshots:
 
 ```bash
-# Push 220 photos to the only attached device:
-scripts/seed_demo_dataset.sh
+# 1. Download Unsplash Lite metadata (~100 MB) and unzip
+#    photos.tsv000 to data/unsplash_lite/.
+#    https://unsplash.com/data/lite/latest
 
-# Or target a specific serial / different size:
-scripts/seed_demo_dataset.sh -s 88d4d8e5 -n 500
+# 2. Download 10k 1080p JPEGs to data/demo_album/  (~30 min).
+pip install requests tqdm
+python scripts/download_demo_dataset.py --count 10000
+
+# 3a. Push to Android  (~5–10 min over USB, idempotent):
+bash scripts/push_demo_to_android.sh
+
+# 3b. Push to iPhone:  open data/demo_album/ in macOS Photos.app,
+#     drag to library, then Finder → device → Sync Photos.
 ```
 
-The script downloads JPEGs, `adb push`es them to `/sdcard/DCIM/Camera/`,
-triggers a MediaStore scan, then prints the launch command. The app's
-cold-start sync will automatically drop records of any prior dataset and
-encode only the new photos — you can re-run the script with a different
-`-n` and the DB stays consistent.
+Full guide: [`docs/demo-dataset.md`](docs/demo-dataset.md). Twenty
+curated English queries with expected hit counts live in
+[`assets/demo_queries.json`](assets/demo_queries.json).
+
+**Quick alternative (220 photos, no metadata download).** For a fast
+functional smoke test on a fresh test phone:
+
+```bash
+scripts/seed_demo_dataset.sh           # 220 Lorem Picsum JPEGs
+scripts/seed_demo_dataset.sh -n 500    # or any custom size
+```
+
+The app's cold-start sync drops records of any prior dataset and
+encodes only the new photos — you can swap datasets freely without
+rebuilding the app.
 
 ## Cold-start Sync
 
