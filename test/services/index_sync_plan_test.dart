@@ -99,4 +99,27 @@ void main() {
       expect(plan.alreadyIndexed.contains('photo_4999'), isFalse);
     });
   });
+
+  group('IndexService.safePk', () {
+    // iOS PhotoKit emits ids like `<UUID>/L0/001` which zvec rejects on
+    // insert with `invalid doc`. Android MediaStore ids are pure
+    // decimal. Lock the transform so the iOS bug cannot regress.
+    test('strips forward slashes (iOS PhotoKit shape)', () {
+      expect(
+        IndexService.safePk('83AB7AC8-7CFA-4E5F-A45E-77E83CDF87CD/L0/001'),
+        equals('83AB7AC8-7CFA-4E5F-A45E-77E83CDF87CD_L0_001'),
+      );
+    });
+
+    test('preserves Android MediaStore numeric ids verbatim', () {
+      expect(IndexService.safePk('1000000045'), equals('1000000045'));
+    });
+
+    test('idempotent under repeated application', () {
+      const raw = 'A/B/C';
+      final once = IndexService.safePk(raw);
+      final twice = IndexService.safePk(once);
+      expect(twice, equals(once));
+    });
+  });
 }

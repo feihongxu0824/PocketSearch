@@ -19,6 +19,18 @@ class IndexService {
   int _totalCount = 0;
   int get totalCount => _totalCount;
 
+  /// Number of photos whose encode/insert threw an exception. Surfaced
+  /// to the UI so silent failures (e.g. unsupported HEIC decode) cannot
+  /// hide behind a green "all indexed" banner like they did before.
+  int _failedCount = 0;
+  int get failedCount => _failedCount;
+
+  /// Last exception message captured by the encode loop. Cleared when a
+  /// new sync starts. Truncated in the progress event to keep the UI
+  /// readable.
+  String? _lastError;
+  String? get lastError => _lastError;
+
   final _progressController = StreamController<IndexProgress>.broadcast();
   Stream<IndexProgress> get progressStream => _progressController.stream;
 
@@ -36,6 +48,8 @@ class IndexService {
   Future<void> startIndexing() async {
     if (_status == IndexStatus.indexing) return;
     _status = IndexStatus.indexing;
+    _failedCount = 0;
+    _lastError = null;
 
     // Request permission. We ONLY need image access; the default
     // `RequestType.common` also asks for video + audio, which fails on
@@ -89,7 +103,7 @@ class IndexService {
         if (batch.isEmpty) break;
         allAssets.addAll(batch);
         for (final a in batch) {
-          liveIds.add(a.id);
+          liveIds.add(safePk(a.id));
         }
         p++;
       }
@@ -121,38 +135,69 @@ class IndexService {
     var processedSinceOptimize = 0;
 
     for (final asset in allAssets) {
-      if (_indexedIds.contains(asset.id)) continue;
+      final pk = safePk(asset.id);
+      if (_indexedIds.contains(pk)) continue;
 
       try {
-        final file = await asset.file;
-        if (file == null) continue;
-
-        final bytes = await file.readAsBytes();
+        // Read photo bytes via photo_manager's thumbnail API rather than
+        // the raw file. The original camera-roll asset on iOS is HEIC,
+        // which the bundled stbi decoder (mnn cv) cannot parse — every
+        // encode call would silently throw and the catch below would
+        // then increment _indexedCount without writing to zvec, leaving
+        // the UI claiming "N indexed" while the vector DB is empty and
+        // search returns nothing. The thumbnail API decodes HEIC →
+        // JPEG inside PhotoKit, and 256×256 happens to be the exact
+        // input size of the MobileCLIP image encoder so there is no
+        // wasted decode work on either platform.
+        final bytes = await asset.thumbnailDataWithSize(
+          const ThumbnailSize.square(256),
+          format: ThumbnailFormat.jpeg,
+        );
+        if (bytes == null || bytes.isEmpty) continue;
         final embedding = _clip.encodeImage(bytes);
 
+        // Store the raw (unsanitized) asset ID as the display path.
+        // On iOS the temp file from `asset.file` is a sandbox copy that
+        // vanishes after the process exits, making `Image.file` fail on
+        // cold start. Using the asset ID lets the grid widget resolve
+        // thumbnails via `AssetEntity.fromId()` on every launch.
+        final photoPath = asset.id;
+
         _store.insert(
-          photoId: asset.id,
+          photoId: pk,
           vector: embedding,
-          photoPath: file.path,
+          photoPath: photoPath,
         );
 
-        _indexedIds.add(asset.id);
+        _indexedIds.add(pk);
         _indexedCount++;
         processedSinceOptimize++;
 
         _progressController.add(IndexProgress(
           current: _indexedCount,
           total: _totalCount,
-          currentPhotoPath: file.path,
+          currentPhotoPath: photoPath,
         ));
 
         if (processedSinceOptimize >= batchSize * 5) {
           _store.optimize();
           processedSinceOptimize = 0;
         }
-      } catch (e) {
-        // Skip failed photos, continue indexing
-        _indexedCount++;
+      } catch (e, st) {
+        // Skip failed photos but surface the error so the bug above
+        // (catch swallowing every iOS HEIC decode) can never come back
+        // unnoticed. _indexedCount intentionally does NOT advance for
+        // failures — UI progress reports successful inserts only.
+        _failedCount++;
+        _lastError = e.toString();
+        _progressController.add(IndexProgress(
+          current: _indexedCount,
+          total: _totalCount,
+          failedCount: _failedCount,
+          lastError: _lastError,
+        ));
+        // ignore: avoid_print
+        print('IndexService: encode failed for ${asset.id}: $e\n$st');
         continue;
       }
     }
@@ -164,6 +209,8 @@ class IndexService {
     _progressController.add(IndexProgress(
       current: _indexedCount,
       total: _totalCount,
+      failedCount: _failedCount,
+      lastError: _lastError,
       currentPhotoPath: null,
     ));
   }
@@ -171,6 +218,17 @@ class IndexService {
   void dispose() {
     _progressController.close();
   }
+
+  /// Sanitize a raw photo asset id into a zvec-compatible primary key.
+  ///
+  /// iOS PhotoKit ids look like `83AB7AC8-.../L0/001` and contain
+  /// forward slashes, which zvec rejects with `invalid doc` on insert.
+  /// Android MediaStore ids are pure decimal so this is a no-op there.
+  /// We map every `/` to `_`; the transform is applied uniformly to
+  /// both `liveIds` (gallery scan) and the values returned by
+  /// [VectorStore.getAllPhotoIds] (already sanitized at insert time),
+  /// which keeps [computeSyncPlan] correct.
+  static String safePk(String rawId) => rawId.replaceAll('/', '_');
 
   /// Pure helper: given the set of photo IDs already stored in the
   /// vector DB and the set of IDs currently visible in the gallery,
@@ -223,11 +281,15 @@ class IndexProgress {
   final int current;
   final int total;
   final String? currentPhotoPath;
+  final int failedCount;
+  final String? lastError;
 
   IndexProgress({
     required this.current,
     required this.total,
     this.currentPhotoPath,
+    this.failedCount = 0,
+    this.lastError,
   });
 
   double get progress => total > 0 ? current / total : 0;

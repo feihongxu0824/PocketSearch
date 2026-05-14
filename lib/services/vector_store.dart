@@ -96,6 +96,10 @@ class VectorStore {
     }
 
     vq.destroy();
+
+    // zvec cosine metric: score = distance (lower = more similar).
+    // Sort ascending so the best match (smallest distance) comes first.
+    output.sort((a, b) => a.score.compareTo(b.score));
     return output;
   }
 

@@ -18,7 +18,11 @@ class SearchService {
 
   /// Perform semantic search: text query → matching photos.
   /// Returns results sorted by similarity score (highest first).
-  SearchResponse search(String query, {int topK = 20}) {
+  /// [topK] caps the maximum number of results.
+  /// [maxDistance] filters out results whose cosine distance exceeds this
+  /// threshold (0.0–2.0). Defaults to 0.95 — roughly cosine-similarity
+  /// >= 0.05, which suppresses total noise while keeping loose matches.
+  SearchResponse search(String query, {int topK = 20, double maxDistance = 0.95}) {
     final stopwatch = Stopwatch()..start();
 
     // 1. Tokenize text
@@ -27,8 +31,11 @@ class SearchService {
     // 2. Encode text to embedding via CLIP text encoder
     final embedding = _clip.encodeText(tokenIds);
 
-    // 3. Query zvec for nearest vectors
-    final results = _store.query(embedding, topK: topK);
+    // 3. Query zvec for nearest vectors (already sorted desc by score)
+    final raw = _store.query(embedding, topK: topK);
+
+    // 4. Filter by maximum distance threshold
+    final results = raw.where((r) => r.score <= maxDistance).toList();
 
     stopwatch.stop();
 

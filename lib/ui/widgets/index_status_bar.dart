@@ -51,9 +51,11 @@ class _IndexStatusBarState extends State<IndexStatusBar> {
       return _buildIndexingBar(0, 'Preparing index...');
     }
 
+    final p = _lastProgress!;
+    final failedSuffix = p.failedCount > 0 ? '  (${p.failedCount} failed)' : '';
     return _buildIndexingBar(
-      _lastProgress!.progress,
-      'Indexing photos: ${_lastProgress!.current}/${_lastProgress!.total}',
+      p.progress,
+      'Indexing photos: ${p.current}/${p.total}$failedSuffix',
     );
   }
 
@@ -65,48 +67,95 @@ class _IndexStatusBarState extends State<IndexStatusBar> {
         color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(
-            width: 16,
-            height: 16,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              value: progress > 0 ? progress : null,
-            ),
+          Row(
+            children: [
+              SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  value: progress > 0 ? progress : null,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  label,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              label,
-              style: Theme.of(context).textTheme.bodySmall,
+          if (_lastProgress?.lastError != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              'last error: ${_truncate(_lastProgress!.lastError!, 200)}',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.red,
+                    fontSize: 11,
+                  ),
             ),
-          ),
+          ],
         ],
       ),
     );
   }
 
   Widget _buildCompletedBar() {
+    final p = _lastProgress!;
+    final hasFailures = p.failedCount > 0;
+    final color = hasFailures ? Colors.orange : Colors.green;
+    final icon = hasFailures
+        ? Icons.warning_amber_rounded
+        : Icons.check_circle_rounded;
+    final label = hasFailures
+        ? '${p.current} indexed, ${p.failedCount} failed (out of ${p.total})'
+        : '${p.total} photos indexed and ready to search';
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.green.withValues(alpha: 0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.check_circle_rounded, size: 16, color: Colors.green),
-          const SizedBox(width: 10),
-          Text(
-            '${_lastProgress!.total} photos indexed and ready to search',
-            style: Theme.of(context).textTheme.bodySmall,
+          Row(
+            children: [
+              Icon(icon, size: 16, color: color),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  label,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+            ],
           ),
+          if (hasFailures && p.lastError != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              'last error: ${_truncate(p.lastError!, 200)}',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.red,
+                    fontSize: 11,
+                  ),
+            ),
+          ],
         ],
       ),
     );
   }
+
+  static String _truncate(String s, int max) =>
+      s.length <= max ? s : '${s.substring(0, max)}…';
 
   Widget _buildErrorBar() {
     return Container(
