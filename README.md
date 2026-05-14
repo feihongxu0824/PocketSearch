@@ -94,15 +94,38 @@ incremental cold-start sync (see *Cold-start sync* below) and indexing
 progress is shown in the status bar.
 
 On iOS, the project is **real-device validated on iPhone (iOS 18)**.
-To install:
 
-1. Open `ios/Runner.xcworkspace` in Xcode and set your Team under
-   *Signing & Capabilities* (a free Apple Developer account works).
-2. `flutter build ios --release` (or `flutter run --release`).
-3. The first launch shows the system photo-library permission dialog
-   (declared as `NSPhotoLibraryUsageDescription` in
-   [`ios/Runner/Info.plist`](ios/Runner/Info.plist)). After granting,
-   the same cold-start sync runs.
+The iOS Xcode workspace (`ios/Runner.xcodeproj`, `ios/Runner.xcworkspace`,
+`ios/RunnerTests/`, `ios/Podfile.lock`) is **not committed to git** —
+following the [`zvec-ai/zvec-dart`](https://github.com/zvec-ai/zvec-dart)
+convention, anything Flutter/CocoaPods can regenerate stays out of
+history so contributors don't accidentally commit their own signing
+team or bundle id. To build for iOS the first time on a fresh clone:
+
+```bash
+# 1. Regenerate the Xcode workspace + RunnerTests scaffold.
+#    Existing files (Info.plist, AppDelegate.swift, Podfile, …) are
+#    preserved — flutter create only fills in the missing scaffolds.
+flutter create --platforms=ios --org ai.zvec --project-name zvec_photo_search .
+
+# 2. Install CocoaPods dependencies.
+cd ios && pod install && cd ..
+
+# 3. Open the workspace in Xcode and set your *Signing Team* under
+#    Runner → Signing & Capabilities (a free Apple Developer account
+#    works for sideloading to your own device).
+open ios/Runner.xcworkspace
+
+# 4. Build / run.
+flutter build ios --release       # produces a 230-ish MB Runner.app
+# or, on a connected iPhone:
+flutter run --release
+```
+
+The first launch shows the system photo-library permission dialog
+(declared as `NSPhotoLibraryUsageDescription` in
+[`ios/Runner/Info.plist`](ios/Runner/Info.plist)). After granting,
+the same cold-start sync runs.
 
 For sideloaded builds you also need to **trust the developer
 certificate** on the device (Settings → General → VPN & Device
@@ -310,4 +333,4 @@ lib/
 
 ## License
 
-MIT
+[Apache License 2.0](LICENSE)
