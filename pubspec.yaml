@@ -29,6 +29,7 @@ dependencies:
 
   # UI
   cupertino_icons: ^1.0.8
+  share_plus: ^13.1.0
 
 dev_dependencies:
   flutter_test:

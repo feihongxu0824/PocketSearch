@@ -1,7 +1,10 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:photo_manager/photo_manager.dart';
 import 'package:zvec_photo_search/services/vector_store.dart';
+import 'package:zvec_photo_search/ui/widgets/photo_detail_page.dart';
 
 /// Displays search results in a staggered grid layout.
 class PhotoGrid extends StatelessWidget {
@@ -34,42 +37,87 @@ class _PhotoTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          Image.file(
-            File(result.photoPath),
-            fit: BoxFit.cover,
-            cacheWidth: 300,
-            errorBuilder: (context, error, stackTrace) => Container(
-              color: Colors.grey[300],
-              child: const Icon(Icons.broken_image_rounded),
-            ),
-          ),
-          // Score overlay
-          Positioned(
-            bottom: 4,
-            right: 4,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.black54,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                '${(result.score * 100).toStringAsFixed(0)}%',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
+    return GestureDetector(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => PhotoDetailPage(result: result),
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            _buildImage(),
+            // Score overlay
+            Positioned(
+              bottom: 4,
+              right: 4,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  '${((1 - result.score) * 100).toStringAsFixed(0)}%',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
+
+  Widget _buildImage() {
+    // If photoPath looks like a file path, try loading from disk (Android
+    // persists real paths). Otherwise treat it as a PhotoKit / MediaStore
+    // asset ID and load via photo_manager.
+    final path = result.photoPath;
+    if (path.startsWith('/') && File(path).existsSync()) {
+      return Image.file(
+        File(path),
+        fit: BoxFit.cover,
+        cacheWidth: 300,
+        errorBuilder: (_, __, ___) => _brokenPlaceholder(),
+      );
+    }
+    // Load thumbnail by asset ID
+    return FutureBuilder<Uint8List?>(
+      future: _loadThumbnail(path),
+      builder: (context, snap) {
+        if (snap.connectionState != ConnectionState.done ||
+            snap.data == null ||
+            snap.data!.isEmpty) {
+          return Container(color: Colors.grey[200]);
+        }
+        return Image.memory(
+          snap.data!,
+          fit: BoxFit.cover,
+          cacheWidth: 300,
+          errorBuilder: (_, __, ___) => _brokenPlaceholder(),
+        );
+      },
+    );
+  }
+
+  static Future<Uint8List?> _loadThumbnail(String assetId) async {
+    final entity = await AssetEntity.fromId(assetId);
+    if (entity == null) return null;
+    return entity.thumbnailDataWithSize(
+      const ThumbnailSize.square(300),
+      format: ThumbnailFormat.jpeg,
+    );
+  }
+
+  static Widget _brokenPlaceholder() => Container(
+        color: Colors.grey[300],
+        child: const Icon(Icons.broken_image_rounded),
+      );
 }
