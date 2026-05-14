@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Run only the latest commit per branch/PR; cancel in-progress runs.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Analyze (Dart static)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter (stable)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.27.0'
+          cache: true
+
+      - name: Show Flutter / Dart versions
+        run: flutter --version
+
+      - name: Resolve dependencies
+        run: flutter pub get
+
+      - name: Static analysis
+        run: flutter analyze --no-fatal-infos
+
+      # NOTE: `flutter test` is intentionally NOT run on CI.
+      #
+      # The `mnn` package's CMake `add_subdirectory` hard-codes the path
+      # `/tmp/mnn_src/MNN-3.5.0`, which means `flutter test` triggers a
+      # full MNN native build (cmake + ninja + protobuf, ~5-10 min on a
+      # fresh Ubuntu runner) just to load the test binary. To run unit
+      # tests locally:
+      #
+      #   bash scripts/prepare_mnn_src.sh   # downloads & extracts MNN 3.5.0
+      #   flutter test test/                # then run unit tests
+      #
+      # Real-device integration tests (`integration_test/smoke_test.dart`)
+      # additionally require a connected phone for MNN+zvec FFI and
+      # photo_manager and are run manually before each release.

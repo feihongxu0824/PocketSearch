@@ -93,15 +93,30 @@ On Android, the first launch will request **photo gallery permission**
 incremental cold-start sync (see *Cold-start sync* below) and indexing
 progress is shown in the status bar.
 
-On iOS, the project is build-verified (`flutter build ios --release
---no-codesign` produces a 233 MB `Runner.app`). To install on a real
-device you need a free Apple Developer account: open
-`ios/Runner.xcworkspace` in Xcode, set your Team under *Signing &
-Capabilities*, then `flutter run`. The first launch shows the system
-photo-library permission dialog (declared in
-[`ios/Runner/Info.plist`](ios/Runner/Info.plist) as
-`NSPhotoLibraryUsageDescription`); after granting, the same cold-start
-sync runs.
+On iOS, the project is **real-device validated on iPhone (iOS 18)**.
+To install:
+
+1. Open `ios/Runner.xcworkspace` in Xcode and set your Team under
+   *Signing & Capabilities* (a free Apple Developer account works).
+2. `flutter build ios --release` (or `flutter run --release`).
+3. The first launch shows the system photo-library permission dialog
+   (declared as `NSPhotoLibraryUsageDescription` in
+   [`ios/Runner/Info.plist`](ios/Runner/Info.plist)). After granting,
+   the same cold-start sync runs.
+
+For sideloaded builds you also need to **trust the developer
+certificate** on the device (Settings → General → VPN & Device
+Management → your Apple ID → Trust) before the app can launch.
+
+## Browse & Share Results
+
+Tap any tile in the result grid to open a full-screen preview
+([`PhotoDetailPage`](lib/ui/widgets/photo_detail_page.dart)) with
+pinch-to-zoom and a **native iOS / Android share sheet** wired through
+[`share_plus`](https://pub.dev/packages/share_plus). The share action
+exports the original asset from PhotoKit / MediaStore (not the
+on-screen thumbnail), so AirDrop / Messages / etc. receive the
+full-resolution image.
 
 ### 4. Seed a Demo Gallery (optional)
 
@@ -151,18 +166,31 @@ plus an end-to-end zvec round-trip test in
 |---|---|---|
 | Unit | `test/services/tokenizer_test.dart` | BPE tokenizer edge cases |
 | Unit | `test/services/index_progress_test.dart` | progress state machine |
-| Unit | `test/services/index_sync_plan_test.dart` | cold-start sync algorithm (8 cases) |
+| Unit | `test/services/index_sync_plan_test.dart` | cold-start sync algorithm + iOS PhotoKit safePk (11 cases) |
 | Unit | `test/services/search_response_test.dart` | search result shape |
 | Unit | `test/utils/vec_math_test.dart` | cosine / L2 normalize |
 | Unit | `test/ui/suggestion_chips_test.dart` | chip widget |
+| Unit | `test/ui/photo_grid_test.dart` | grid + percentage label (zvec distance → similarity) |
 | Integration (real device) | `integration_test/smoke_test.dart` | MNN encoders, zvec FFI, cross-modal alignment, VectorStore CRUD, cold-start sync end-to-end — 17 cases |
 
 Run everything:
 
 ```bash
-flutter test                                   # unit (~37 cases)
+# First-time / after-reboot only — fetch MNN 3.5.0 source to /tmp/mnn_src
+# (see Pitfall #10 below for why this is needed). Skip if already prepared.
+bash scripts/prepare_mnn_src.sh
+
+flutter test test/                             # unit (~40 cases, < 5s once cached)
 flutter test integration_test/smoke_test.dart  # on a connected device
 ```
+
+## Continuous Integration
+
+GitHub Actions runs [`flutter analyze`](.github/workflows/ci.yml) on
+every push and PR to `main`. Unit tests are not run on CI — the `mnn`
+package triggers a full MNN native build on `flutter test`, which is
+far more expensive than analyze and adds little signal. Run unit tests
+locally before opening a PR.
 
 ## Known Pitfalls (battle-tested)
 
@@ -198,6 +226,46 @@ next contributor doesn't have to rediscover them:
    On macOS:
    `export PATH="$HOME/Library/Android/sdk/platform-tools:$PATH"`.
 
+6. **iOS PhotoKit asset IDs contain `/` characters.** A real id looks
+   like `83AB7AC8-XXXX-XXXX-XXXX-XXXXXXXXXXXX/L0/001`. zvec rejects
+   any document whose primary key contains `/` with `invalid doc`,
+   silently dropping every iOS photo at insert time. Sanitize the id
+   (we replace `/` with `_`) before using it as a zvec pk — Android
+   numeric ids are unaffected. See
+   [`IndexService.safePk`](lib/services/index_service.dart).
+
+7. **iPhone camera roll defaults to HEIC, which the bundled `stbi`
+   decoder cannot parse.** `asset.file.readAsBytes()` returns raw HEIC
+   bytes; the image preprocessor then sees zeros for every pixel and
+   the resulting embedding is meaningless. Always pull pixels through
+   `asset.thumbnailDataWithSize(256x256, JPEG)` so PhotoKit handles
+   HEIC → JPEG decoding in-process. 256x256 is also the exact
+   MobileCLIP image-encoder input size, so no extra resize is needed.
+
+8. **`asset.file` on iOS is a sandbox temp copy that vanishes on
+   restart.** If you store that path as the photo's display URI,
+   `Image.file` silently fails on every cold start (broken-image
+   icon). Store the raw `asset.id` instead and resolve thumbnails via
+   `AssetEntity.fromId().thumbnailDataWithSize` at display time —
+   that works on every launch on both platforms.
+
+9. **zvec `MetricType.cosine` returns _distance_, not similarity.**
+   Lower score == better match. The natural "sort descending,
+   percentage = score * 100" pattern produces an inverted ranking
+   (rank 1 shows 80%, rank N shows 88%). Sort _ascending_ and display
+   `(1 - score) * 100` to match user intuition; threshold via a
+   `maxDistance` cap (e.g. `<= 0.95`).
+
+10. **`mnn-0.1.3` hard-codes `/tmp/mnn_src/MNN-3.5.0` as its CMake
+    source.** It does NOT use FetchContent — the directory must
+    already exist before `flutter test` (or any other build) runs.
+    macOS purges `/tmp` on reboot, so on cold-start days you'll see
+    `add_subdirectory given source ".../MNN-3.5.0" which is not an
+    existing directory`. Run
+    [`scripts/prepare_mnn_src.sh`](scripts/prepare_mnn_src.sh) to
+    download (with mirror fallback for slow GitHub regions) and
+    extract the source. The script is idempotent.
+
 
 ## Project Structure
 
@@ -216,9 +284,10 @@ lib/
 └── ui/
     ├── home_page.dart           # Main search page
     └── widgets/
-        ├── photo_grid.dart      # Results grid
+        ├── photo_grid.dart      # Results grid (tap = open preview)
+        ├── photo_detail_page.dart # Full-screen preview + share sheet
         ├── suggestion_chips.dart # Query suggestions
-        └── index_status_bar.dart # Indexing progress
+        └── index_status_bar.dart # Indexing progress (with failure surface)
 ```
 
 ## Performance (expected)
