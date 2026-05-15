@@ -37,11 +37,6 @@ dependencies:
   # HTTP client used by the optional OpenAI-compatible LLM query rewriter
   http: ^1.2.0
 
-  # On-device LLM (MediaPipe LiteRT-LM): Gemma 3 / Qwen 2.5 / Qwen3 / Phi-4 etc.
-  # Used by the optional *local* query rewriter so the app can stay
-  # 100% offline once the model is downloaded.
-  flutter_gemma: ^0.15.1
-
 dev_dependencies:
   flutter_test:
     sdk: flutter

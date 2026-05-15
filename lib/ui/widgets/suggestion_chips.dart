@@ -57,18 +57,22 @@ class SuggestionChips extends StatelessWidget {
                 ),
           ),
           const SizedBox(height: 16),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: displayed.map((query) {
-              return ActionChip(
-                label: Text(query),
-                onPressed: () => onTap(query),
-                avatar: const Icon(Icons.search, size: 16),
-              );
-            }).toList(),
+          Flexible(
+            child: SingleChildScrollView(
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: displayed.map((query) {
+                  return ActionChip(
+                    label: Text(query),
+                    onPressed: () => onTap(query),
+                    avatar: const Icon(Icons.search, size: 16),
+                  );
+                }).toList(),
+              ),
+            ),
           ),
-          const Spacer(),
+          const SizedBox(height: 16),
           Center(
             child: Text(
               'Powered by zvec + MobileCLIP\nFully on-device \u2022 No cloud \u2022 Private',
