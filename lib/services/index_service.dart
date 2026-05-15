@@ -167,6 +167,9 @@ class IndexService {
           photoId: pk,
           vector: embedding,
           photoPath: photoPath,
+          createdAt: asset.createDateTime.millisecondsSinceEpoch,
+          latitude: asset.latitude,
+          longitude: asset.longitude,
         );
 
         _indexedIds.add(pk);

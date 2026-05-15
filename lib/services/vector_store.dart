@@ -18,35 +18,70 @@ class VectorStore {
     return c;
   }
 
+  /// Schema version tag. Bump this when adding/removing fields so that
+  /// [initialize] can detect stale collections and trigger a full re-index.
+  static const int schemaVersion = 2;
+
   /// Initialize zvec and open/create the photo embeddings collection.
   ///
   /// If [dbPath] already exists (returning user), opens the existing
   /// collection. Otherwise creates a fresh one with the photo embedding
   /// schema. `Collection.createAndOpen` alone would crash on second launch
   /// because zvec requires the path to be absent.
-  Future<void> initialize(String dbPath) async {
-    if (_initialized) return;
+  ///
+  /// Returns `true` when a **migration** happened (old schema detected
+  /// and deleted). The caller should trigger a full re-index in that case.
+  Future<bool> initialize(String dbPath) async {
+    if (_initialized) return false;
 
     if (!Zvec.isInitialized) {
       Zvec.initialize();
     }
 
+    bool migrated = false;
+
     if (Directory(dbPath).existsSync()) {
-      _collection = Collection.open(dbPath);
-    } else {
+      // Schema version marker file lives next to the DB directory.
+      final versionFile = File('$dbPath.version');
+      final currentVersion = versionFile.existsSync()
+          ? int.tryParse(versionFile.readAsStringSync().trim()) ?? 0
+          : 0;
+      if (currentVersion < schemaVersion) {
+        // Old schema detected — close any open handles and nuke the dir.
+        try {
+          final probe = Collection.open(dbPath);
+          probe.close();
+        } catch (_) {}
+        if (Directory(dbPath).existsSync()) {
+          Directory(dbPath).deleteSync(recursive: true);
+        }
+        migrated = true;
+      } else {
+        // Current schema — just open the existing collection.
+        _collection = Collection.open(dbPath);
+      }
+    }
+
+    if (_collection == null) {
       final schema = CollectionSchema(name: 'photo_embeddings', fields: [
         VectorSchema('embedding', 512, indexParams: HnswIndexParams()),
         FieldSchema(name: 'photo_id', dataType: DataType.string),
         FieldSchema(name: 'photo_path', dataType: DataType.string),
         FieldSchema(name: 'indexed_at', dataType: DataType.int64),
+        FieldSchema(name: 'created_at', dataType: DataType.int64),
+        FieldSchema(name: 'latitude', dataType: DataType.float64),
+        FieldSchema(name: 'longitude', dataType: DataType.float64),
       ]);
       try {
         _collection = Collection.createAndOpen(dbPath, schema);
       } finally {
         schema.destroy();
       }
+      // Write schema version marker so future launches skip migration.
+      File('$dbPath.version').writeAsStringSync('$schemaVersion');
     }
     _initialized = true;
+    return migrated;
   }
 
   /// Insert a photo embedding with metadata.
@@ -54,6 +89,9 @@ class VectorStore {
     required String photoId,
     required Float32List vector,
     required String photoPath,
+    int? createdAt,
+    double? latitude,
+    double? longitude,
   }) {
     assert(_initialized, 'VectorStore not initialized');
 
@@ -62,6 +100,16 @@ class VectorStore {
       ..setField('photo_id', photoId)
       ..setField('photo_path', photoPath)
       ..setField('indexed_at', DateTime.now().millisecondsSinceEpoch);
+
+    if (createdAt != null) {
+      doc.setField('created_at', createdAt);
+    }
+    if (latitude != null && latitude != 0.0) {
+      doc.setField('latitude', latitude);
+    }
+    if (longitude != null && longitude != 0.0) {
+      doc.setField('longitude', longitude);
+    }
 
     _collection!.insert([doc]);
     doc.destroy();
@@ -74,7 +122,10 @@ class VectorStore {
   }
 
   /// Query for top-K most similar vectors.
-  List<PhotoSearchResult> query(Float32List vector, {int topK = 20}) {
+  ///
+  /// When [filter] is non-null it is passed as a zvec scalar-filter
+  /// expression (e.g. `'created_at >= 1717200000000 AND created_at < 1725148800000'`).
+  List<PhotoSearchResult> query(Float32List vector, {int topK = 20, String? filter}) {
     assert(_initialized, 'VectorStore not initialized');
 
     final vq = VectorQuery(
@@ -82,6 +133,7 @@ class VectorStore {
       vector: vector,
       topk: topK,
       outputFields: ['photo_id', 'photo_path'],
+      filter: filter,
     );
 
     final results = _collection!.query(vq);

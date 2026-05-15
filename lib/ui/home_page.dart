@@ -7,8 +7,10 @@ import 'package:path_provider/path_provider.dart';
 import 'package:zvec_photo_search/services/clip_service.dart';
 import 'package:zvec_photo_search/services/index_service.dart';
 import 'package:zvec_photo_search/services/search_service.dart';
+import 'package:zvec_photo_search/services/settings_service.dart';
 import 'package:zvec_photo_search/services/tokenizer.dart';
 import 'package:zvec_photo_search/services/vector_store.dart';
+import 'package:zvec_photo_search/ui/settings_page.dart';
 import 'package:zvec_photo_search/ui/widgets/index_status_bar.dart';
 import 'package:zvec_photo_search/ui/widgets/photo_grid.dart';
 import 'package:zvec_photo_search/ui/widgets/suggestion_chips.dart';
@@ -29,6 +31,7 @@ class _HomePageState extends State<HomePage> {
   late Tokenizer _tokenizer;
   late IndexService _indexService;
   late SearchService _searchService;
+  late SettingsService _settings;
 
   bool _isInitialized = false;
   bool _isSearching = false;
@@ -66,7 +69,16 @@ class _HomePageState extends State<HomePage> {
 
       // Initialize vector store
       _vectorStore = VectorStore();
-      await _vectorStore.initialize('${appDir.path}/zvec_photos');
+      // ignore: unused_local_variable — migration triggers full re-index via startIndexing()
+      final migrated = await _vectorStore.initialize('${appDir.path}/zvec_photos');
+
+      // Load persisted user settings (LLM rewriter config). When the
+      // toggle is OFF or the API key is missing, buildRewriter()
+      // returns the no-op IdentityQueryRewriter so the offline path
+      // is byte-for-byte identical to before this feature existed.
+      _settings = SettingsService();
+      await _settings.load();
+      _settings.addListener(_onSettingsChanged);
 
       // Initialize services
       _indexService = IndexService(clip: _clipService, store: _vectorStore);
@@ -74,6 +86,7 @@ class _HomePageState extends State<HomePage> {
         clip: _clipService,
         store: _vectorStore,
         tokenizer: _tokenizer,
+        rewriter: _settings.buildRewriter(),
       );
 
       setState(() => _isInitialized = true);
@@ -85,23 +98,40 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _performSearch(String query) {
+  void _onSettingsChanged() {
+    if (!_isInitialized) return;
+    _searchService.updateRewriter(_settings.buildRewriter());
+  }
+
+  Future<void> _performSearch(String query) async {
     if (!_isInitialized || query.trim().isEmpty) return;
 
     setState(() => _isSearching = true);
 
-    final response = _searchService.search(query.trim());
+    final response = await _searchService.search(query.trim());
 
+    if (!mounted) return;
     setState(() {
       _searchResponse = response;
       _isSearching = false;
     });
   }
 
+  void _openSettings() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => SettingsPage(settings: _settings),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
     _focusNode.dispose();
+    if (_isInitialized) {
+      _settings.removeListener(_onSettingsChanged);
+    }
     _indexService.dispose();
     _vectorStore.dispose();
     _clipService.dispose();
@@ -148,6 +178,12 @@ class _HomePageState extends State<HomePage> {
                   fontWeight: FontWeight.w600,
                 ),
           ),
+          const Spacer(),
+          IconButton(
+            tooltip: 'Settings',
+            icon: const Icon(Icons.settings_outlined),
+            onPressed: _isInitialized ? _openSettings : null,
+          ),
         ],
       ),
     );
@@ -188,20 +224,61 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildTimingInfo() {
     final resp = _searchResponse!;
+    final rewrite = resp.rewrite;
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.bolt_rounded,
-              size: 14, color: Theme.of(context).colorScheme.tertiary),
-          const SizedBox(width: 4),
-          Text(
-            'Found ${resp.results.length} results from ${resp.totalPhotos} photos '
-            'in ${resp.queryTimeMs}ms \u2022 fully offline',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.tertiary,
+          Row(
+            children: [
+              Icon(Icons.bolt_rounded, size: 14, color: theme.colorScheme.tertiary),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  'Found ${resp.results.length} results from ${resp.totalPhotos} photos '
+                  'in ${resp.queryTimeMs}ms',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.tertiary,
+                      ),
                 ),
+              ),
+            ],
           ),
+          if (rewrite.wasRewritten)
+            Padding(
+              padding: const EdgeInsets.only(top: 2, left: 18),
+              child: Text(
+                'LLM rewrote "${rewrite.original}" → "${rewrite.effectiveQuery}" '
+                '(${resp.rewriteTimeMs}ms)',
+                style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.secondary,
+                      fontStyle: FontStyle.italic,
+                    ),
+              ),
+            ),
+          if (rewrite.wasRewritten && rewrite.filters != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 2, left: 18),
+              child: Text(
+                '🔍 ${rewrite.filters!.toDisplayString()}',
+                style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.primary,
+                    ),
+              ),
+            )
+          else if (rewrite.error != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 2, left: 18),
+              child: Text(
+                'LLM rewrite failed (${rewrite.error}); used the original query.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.error,
+                      fontStyle: FontStyle.italic,
+                    ),
+              ),
+            ),
         ],
       ),
     );

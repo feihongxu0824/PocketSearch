@@ -182,6 +182,76 @@ The app's cold-start sync drops records of any prior dataset and
 encodes only the new photos — you can swap datasets freely without
 rebuilding the app.
 
+## Optional: LLM Query Agent
+
+MobileCLIP-S1 was trained on English captions, so the out-of-the-box
+search experience handles short English visual phrases best (`sunset at
+the beach`, `cat sleeping on a couch`). For users who want to type the
+way they think — long Chinese sentences, temporal references like
+*"去年夏天海边玩的照片"* — the app ships with an **optional** LLM
+query-agent layer that produces:
+
+1. A **visual description** (4–15 English words) for CLIP matching.
+2. Optional **date filters** (`date_start`, `date_end`) resolved from
+   relative time expressions using the current date.
+3. Optional **geo bounding-box** for location-aware filtering.
+
+Two modes (Settings → gear icon on the home page, persisted via
+`shared_preferences` on-device only):
+
+| Mode | Network at search time | Best for |
+|------|------------------------|----------|
+| **Off** | none | The original 100%-offline demo — nothing changes. |
+| **Remote** *(default)* | one HTTPS POST per search (query text only) | Natural language + date/geo filtering via any OpenAI-compatible API. |
+
+> **Note:** Local on-device LLM mode was removed in May 2026 after
+> real-device testing showed 1.5B-class models require 60s+ per
+> inference on mobile hardware, making the UX unacceptable. The code
+> remains in the repo for reference but is no longer exposed in the UI.
+
+### Remote mode — OpenAI-compatible API
+
+Default configuration ships with **DashScope** (Aliyun) `qwen-turbo`.
+Also works with OpenAI, DeepSeek, Together, self-hosted Ollama, etc.
+Only the query text is sent — never photos, never embeddings, never
+gallery metadata. Image encoding, vector search and result rendering
+remain 100% on-device.
+
+| Field    | Default                                                | Notes |
+|----------|--------------------------------------------------------|-------|
+| Base URL | `https://dashscope.aliyuncs.com/compatible-mode/v1`    | Any OpenAI-compatible endpoint. |
+| Model    | `qwen-turbo`                                           | Pick something small and fast — temperature is pinned to 0. |
+| API Key  | (must be configured)                                   | Stored in `shared_preferences`. |
+
+### Endpoint examples (all OpenAI-compatible)
+
+| Provider       | Base URL                                                | Suggested model     |
+|----------------|---------------------------------------------------------|---------------------|
+| Aliyun DashScope (compat mode) | `https://dashscope.aliyuncs.com/compatible-mode/v1` | `qwen-turbo` |
+| OpenAI         | `https://api.openai.com/v1`                             | `gpt-4o-mini`       |
+| DeepSeek       | `https://api.deepseek.com/v1`                           | `deepseek-chat`     |
+| Self-hosted Ollama | `http://<host>:11434/v1`                            | any installed chat model |
+
+### Common guarantees
+
+- **Always falls back.** Any HTTP error / timeout / empty response
+  silently degrades to the original query so search never breaks.
+  The strip below the search bar shows whether a rewrite happened
+  (`LLM rewrote "…" → "…" (Xms)`) so the behaviour stays transparent.
+- **Metadata filters displayed.** When the agent extracts date/geo
+  filters, they are shown below the search bar with a 🔍 prefix.
+
+Full configuration guide, prompt details, endpoint examples and
+latency budget: [`docs/llm-query-rewriter.md`](docs/llm-query-rewriter.md).
+Implementation lives in
+[`lib/services/query_rewriter.dart`](lib/services/query_rewriter.dart)
+(`QueryRewriter` interface + `IdentityQueryRewriter` no-op default +
+`OpenAICompatibleQueryRewriter`).
+Unit-tested at
+[`test/services/query_rewriter_test.dart`](test/services/query_rewriter_test.dart)
+and
+[`test/services/settings_service_test.dart`](test/services/settings_service_test.dart).
+
 ## Cold-start Sync
 
 On every launch [`IndexService`](lib/services/index_service.dart) runs a
@@ -323,11 +393,15 @@ lib/
 │   ├── index_service.dart       # Gallery scan & background indexing
 │   ├── search_service.dart      # Text-to-image search orchestration
 │   ├── vector_store.dart        # zvec wrapper
-│   └── tokenizer.dart           # BPE tokenizer (Dart)
+│   ├── tokenizer.dart           # BPE tokenizer (Dart)
+│   ├── query_rewriter.dart      # Optional remote LLM query rewriter (OpenAI-compat)
+│   ├── local_llm_rewriter.dart  # On-device LLM (deprecated, not exposed in UI)
+│   └── settings_service.dart    # LLM mode (off/remote) + persistence
 ├── utils/
 │   └── image_preprocessor.dart  # Image resize + normalize
 └── ui/
-    ├── home_page.dart           # Main search page
+    ├── home_page.dart           # Main search page (gear ⇒ settings)
+    ├── settings_page.dart       # LLM mode picker (off/remote) + API endpoint config
     └── widgets/
         ├── photo_grid.dart      # Results grid (tap = open preview)
         ├── photo_detail_page.dart # Full-screen preview + share sheet
