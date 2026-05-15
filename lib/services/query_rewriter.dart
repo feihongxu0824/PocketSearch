@@ -115,6 +115,8 @@ Rules:
   (e.g. "today", "last week", "2025", "yesterday", "去年", "上个月").
   Possessive words like "my" or "我的" do NOT imply any date.
 - geo: use a city-wide bounding box (cover the full urban area, not just city center).
+- If the query mentions BOTH a place AND a time, you MUST include BOTH "geo" AND
+  date_start/date_end. Never drop one when both are present.
 
 Output ONLY the JSON. No markdown fences, no explanation, no quotes around the JSON.
 
@@ -139,6 +141,12 @@ User: my dog playing in the park
 
 User: sunset by the sea
 {"visual":"sunset over the ocean with golden light"}
+
+User: 上周在东京吃的拉面
+{"visual":"ramen noodles in a Japanese restaurant","date_start":"2026-05-04","date_end":"2026-05-11","geo":{"lat_min":35.5,"lat_max":35.9,"lng_min":139.5,"lng_max":139.9}}
+
+User: photos in Paris last summer
+{"visual":"streets and landmarks in Paris","date_start":"2025-06-01","date_end":"2025-09-01","geo":{"lat_min":48.8,"lat_max":48.9,"lng_min":2.2,"lng_max":2.5}}
 ''';
 
 /// Build the full agent system prompt by prepending the current date.
