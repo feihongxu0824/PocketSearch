@@ -10,6 +10,7 @@ import 'package:zvec_photo_search/services/search_service.dart';
 import 'package:zvec_photo_search/services/settings_service.dart';
 import 'package:zvec_photo_search/services/tokenizer.dart';
 import 'package:zvec_photo_search/services/vector_store.dart';
+import 'package:zvec_photo_search/models/search_filters.dart';
 import 'package:zvec_photo_search/ui/settings_page.dart';
 import 'package:zvec_photo_search/ui/widgets/index_status_bar.dart';
 import 'package:zvec_photo_search/ui/widgets/photo_grid.dart';
@@ -260,13 +261,8 @@ class _HomePageState extends State<HomePage> {
             ),
           if (rewrite.wasRewritten && rewrite.filters != null)
             Padding(
-              padding: const EdgeInsets.only(top: 2, left: 18),
-              child: Text(
-                '🔍 ${rewrite.filters!.toDisplayString()}',
-                style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.primary,
-                    ),
-              ),
+              padding: const EdgeInsets.only(top: 6, left: 18),
+              child: _FilterChips(filters: rewrite.filters!),
             )
           else if (rewrite.error != null)
             Padding(
@@ -341,5 +337,84 @@ class _HomePageState extends State<HomePage> {
       _searchController.text = query;
       _performSearch(query);
     });
+  }
+}
+
+/// Visual chips that surface the structured filters extracted by the LLM
+/// agent (date range / GPS bounding box). Makes it obvious to the user
+/// (and to a demo audience) that the agent really did something.
+class _FilterChips extends StatelessWidget {
+  final SearchFilters filters;
+
+  const _FilterChips({required this.filters});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final chips = <Widget>[];
+
+    final dateLabel = _dateLabel();
+    if (dateLabel != null) {
+      chips.add(_chip(theme, Icons.calendar_today_rounded, dateLabel));
+    }
+
+    final geoLabel = _geoLabel();
+    if (geoLabel != null) {
+      chips.add(_chip(theme, Icons.location_on_rounded, geoLabel));
+    }
+
+    if (chips.isEmpty) return const SizedBox.shrink();
+    return Wrap(spacing: 6, runSpacing: 6, children: chips);
+  }
+
+  Widget _chip(ThemeData theme, IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: theme.colorScheme.onPrimaryContainer),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onPrimaryContainer,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String? _dateLabel() {
+    if (filters.dateStartMs == null && filters.dateEndMs == null) return null;
+    final start = filters.dateStartMs != null
+        ? _fmt(filters.dateStartMs!)
+        : '...';
+    final end =
+        filters.dateEndMs != null ? _fmt(filters.dateEndMs!) : '...';
+    return '$start → $end';
+  }
+
+  String? _geoLabel() {
+    if (filters.latMin == null ||
+        filters.latMax == null ||
+        filters.lngMin == null ||
+        filters.lngMax == null) {
+      return null;
+    }
+    return 'lat ${filters.latMin!.toStringAsFixed(2)}–${filters.latMax!.toStringAsFixed(2)}, '
+        'lng ${filters.lngMin!.toStringAsFixed(2)}–${filters.lngMax!.toStringAsFixed(2)}';
+  }
+
+  static String _fmt(int ms) {
+    final d = DateTime.fromMillisecondsSinceEpoch(ms);
+    return '${d.year}-${d.month.toString().padLeft(2, '0')}'
+        '-${d.day.toString().padLeft(2, '0')}';
   }
 }

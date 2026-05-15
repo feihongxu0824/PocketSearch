@@ -48,14 +48,18 @@ void main() {
       expect(s.buildRewriter(), isA<OpenAICompatibleQueryRewriter>());
     });
 
-    test('LlmMode.local now returns IdentityQueryRewriter (local LLM removed)',
+    test('legacy LlmMode.local pref migrates to LlmMode.off (local LLM removed)',
         () async {
+      // Older app versions may have persisted the now-removed 'local' enum
+      // value. The settings loader must coerce it back to off so the user
+      // does not get stuck without a working rewriter.
       SharedPreferences.setMockInitialValues({
-        'llm.mode': LlmMode.local.name,
+        'llm.mode': 'local',
       });
       final s = SettingsService();
       await s.load();
 
+      expect(s.mode, LlmMode.off);
       expect(s.buildRewriter(), isA<IdentityQueryRewriter>());
     });
   });

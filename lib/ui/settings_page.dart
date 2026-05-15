@@ -4,10 +4,8 @@ import 'package:zvec_photo_search/services/settings_service.dart';
 
 /// Settings page for the optional LLM-based query rewriter.
 ///
-/// Three mutually-exclusive modes:
+/// Two mutually-exclusive modes:
 ///   * Off    — fully offline, the CLIP encoder sees the raw query.
-///   * Local  — on-device LLM via flutter_gemma. Zero network at
-///              inference time; one-time model download required.
 ///   * Remote — OpenAI-compatible chat-completions endpoint. Sends only
 ///              the query text, never any photo / embedding.
 ///
@@ -59,19 +57,21 @@ class _SettingsPageState extends State<SettingsPage> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _sectionHeader(context, 'LLM Query Rewriter (optional)'),
+          _sectionHeader(context, 'LLM Query Agent (optional)'),
           const SizedBox(height: 4),
           Text(
-            'Rewrites your natural-language query into a short English '
-            'visual description that the on-device CLIP encoder can match. '
-            'Choose Off to stay fully offline; Local for an on-device '
-            'LLM (one-time download); Remote for an OpenAI-compatible API.',
+            'Expands your natural-language query into a structured search: '
+            'a short English visual description (matched by the on-device '
+            'CLIP encoder) plus optional date / geo filters extracted from '
+            'the query. Choose Off to stay fully offline; Remote sends '
+            'only the query text — never photos or embeddings — to an '
+            'OpenAI-compatible endpoint.',
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 12),
           RadioListTile<LlmMode>(
             value: LlmMode.off,
-            groupValue: s.mode == LlmMode.local ? LlmMode.off : s.mode,
+            groupValue: s.mode,
             onChanged: (v) => v != null ? s.setMode(v) : null,
             title: const Text('Off (fully offline)'),
             subtitle: const Text(
@@ -79,18 +79,18 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           RadioListTile<LlmMode>(
             value: LlmMode.remote,
-            groupValue: s.mode == LlmMode.local ? LlmMode.off : s.mode,
+            groupValue: s.mode,
             onChanged: (v) => v != null ? s.setMode(v) : null,
             title: const Text('Remote (OpenAI-compatible API)'),
             subtitle: const Text(
-                'Sends only the query text \u2014 never photos or embeddings.'),
+                'Sends only the query text — never photos or embeddings.'),
           ),
           if (s.mode == LlmMode.remote) ..._buildRemoteSection(context),
           const SizedBox(height: 24),
           Text(
             'Privacy: in every mode the photos, thumbnails, and vector '
             'embeddings always stay on the device. Only the search query '
-            '(or, in Local mode, nothing at inference time) leaves it.',
+            'leaves it (and only when Remote is on).',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   fontStyle: FontStyle.italic,
                 ),

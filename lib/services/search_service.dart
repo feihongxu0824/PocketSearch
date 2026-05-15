@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import 'package:zvec_photo_search/services/clip_service.dart';
 import 'package:zvec_photo_search/services/query_rewriter.dart';
 import 'package:zvec_photo_search/services/tokenizer.dart';
@@ -60,6 +62,18 @@ class SearchService {
 
     // 3. Query zvec for nearest vectors (already sorted desc by score)
     final filterExpr = rewriteResult.filters?.toZvecFilter();
+
+    // Debug visibility: print rewrite + filter so it is easy to diagnose
+    // "why was X recalled / not recalled" without rebuilding the app.
+    if (kDebugMode) {
+      // ignore: avoid_print
+      print('[search] q="$query"\n'
+          '  effective="$effective"\n'
+          '  filters=${rewriteResult.filters ?? 'none'}\n'
+          '  zvec_filter=${filterExpr ?? 'none'}\n'
+          '  rewrite_ms=${rewriteSw.elapsedMilliseconds}');
+    }
+
     final raw = _store.query(embedding, topK: topK, filter: filterExpr);
 
     // 4. Filter by maximum distance threshold
