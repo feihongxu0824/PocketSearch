@@ -110,6 +110,12 @@ Fields:
 - "date_end": exclusive end date, ISO-8601 (YYYY-MM-DD). Omit if no time intent.
 - "geo": {"lat_min","lat_max","lng_min","lng_max"} bounding box. Omit if unsure.
 
+Rules:
+- date_start/date_end: ONLY include when the user EXPLICITLY mentions a time expression
+  (e.g. "today", "last week", "2025", "yesterday", "去年", "上个月").
+  Possessive words like "my" or "我的" do NOT imply any date.
+- geo: use a city-wide bounding box (cover the full urban area, not just city center).
+
 Output ONLY the JSON. No markdown fences, no explanation, no quotes around the JSON.
 
 Examples:
@@ -117,7 +123,7 @@ User: 去年夏天海边玩的照片
 {"visual":"people playing on a sunny beach in summer","date_start":"2025-06-01","date_end":"2025-09-01"}
 
 User: 在北京拍的建筑
-output: {"visual":"buildings and architecture in Beijing","geo":{"lat_min":39.4,"lat_max":41.1,"lng_min":115.4,"lng_max":117.5}}
+{"visual":"buildings and architecture in Beijing","geo":{"lat_min":39.4,"lat_max":41.1,"lng_min":115.4,"lng_max":117.5}}
 
 User: 白猫
 {"visual":"white cat indoors"}
@@ -125,8 +131,14 @@ User: 白猫
 User: 前天晚上的晚霞
 {"visual":"sunset sky with colorful clouds in the evening","date_start":"2026-05-11","date_end":"2026-05-12"}
 
+User: today photos
+{"visual":"photos taken today","date_start":"2026-05-13","date_end":"2026-05-14"}
+
+User: my dog playing in the park
+{"visual":"dog playing in a grassy park"}
+
 User: sunset by the sea
-{"visual":"sunset by the sea"}
+{"visual":"sunset over the ocean with golden light"}
 ''';
 
 /// Build the full agent system prompt by prepending the current date.

@@ -20,7 +20,7 @@ class VectorStore {
 
   /// Schema version tag. Bump this when adding/removing fields so that
   /// [initialize] can detect stale collections and trigger a full re-index.
-  static const int schemaVersion = 2;
+  static const int schemaVersion = 3;
 
   /// Initialize zvec and open/create the photo embeddings collection.
   ///
@@ -101,15 +101,14 @@ class VectorStore {
       ..setField('photo_path', photoPath)
       ..setField('indexed_at', DateTime.now().millisecondsSinceEpoch);
 
-    if (createdAt != null) {
-      doc.setField('created_at', createdAt);
-    }
-    if (latitude != null && latitude != 0.0) {
-      doc.setField('latitude', latitude);
-    }
-    if (longitude != null && longitude != 0.0) {
-      doc.setField('longitude', longitude);
-    }
+    // IMPORTANT: zvec scalar filters treat MISSING fields as a pass-through
+    // (the filter predicate does not run on docs that lack the field), so a
+    // doc with no GPS would be wrongly recalled by `latitude >= X AND ...`.
+    // We therefore always write a sentinel value (0) for filterable fields
+    // and let the filter expression compare against real GPS coordinates.
+    doc.setField('created_at', createdAt ?? 0);
+    doc.setField('latitude', latitude ?? 0.0);
+    doc.setField('longitude', longitude ?? 0.0);
 
     _collection!.insert([doc]);
     doc.destroy();
