@@ -18,12 +18,14 @@ The whole setup is reproducible end-to-end from this repo.
 
 1. Visit <https://unsplash.com/data/lite/latest>, accept the dataset
    terms, and download the ZIP (~100 MB).
-2. Unzip and place `photos.tsv000` at:
+2. Unzip and place the metadata file at:
 
    ```
-   data/unsplash_lite/photos.tsv000
+   data/unsplash_lite/photos.tsv000   # older Unsplash exports
+   data/unsplash_lite/photos.csv000   # current Unsplash exports — same TSV content, different name
    ```
 
+   Either filename works — `download_demo_dataset.py` accepts both.
    (The `data/` directory is gitignored.)
 
 ## Step 2 — Download 10k JPEGs
@@ -64,34 +66,51 @@ permission.
 
 ## Step 3b — Push to iPhone
 
-iOS is more locked-down. Two options that both work:
+iOS does not let third-party tools push directly into the Camera
+Roll. The only stable cable-free path is **Photos.app on Mac → iCloud
+Photos → iPhone Photos**, and we ship a script that automates the Mac
+side via AppleScript:
 
-**Option A — Finder (fastest, recommended).**
+```bash
+bash scripts/push_demo_to_ios.sh                 # default album: "zvec demo"
+bash scripts/push_demo_to_ios.sh path/to/dir
+bash scripts/push_demo_to_ios.sh path/to/dir "My Album"
+```
 
-1. Connect the iPhone via USB and trust the Mac.
-2. In Finder, select the device → "Files" tab.
-3. Drag `data/demo_album/` onto the demo app's container — but this
-   only works if the demo exposes a `Files`-app share. We don't, so
-   prefer Option B for this project.
+The script:
+1. Verifies the source dir.
+2. Creates the target album in Photos.app if missing.
+3. Imports all JPEGs in batches of 200 (skip-duplicates is on, so
+   re-running is idempotent).
+4. Prints next-step instructions for watching iCloud sync status.
 
-**Option B — Photos app sync via Image Capture.**
+**Pre-flight on the Mac:**
+- Photos.app opened at least once (system library exists).
+- System Settings → Apple ID → iCloud → Photos: **ON**.
+- Enough iCloud storage (~2 GB for 10k photos).
 
-1. Open `/Applications/Image Capture.app`.
-2. Connect the iPhone and select it in the sidebar.
-3. Switch the bottom-right popup to "Import to: Photos".
-4. ⚠️  Image Capture imports *from* the device by default; for the
-   reverse direction use `Photos` app:
-   - Open `Photos.app`, drag `data/demo_album/` into the library, wait
-     for it to ingest.
-   - Connect iPhone, in Finder → Sync Photos → choose your library.
+**Pre-flight on the iPhone:**
+- Same Apple ID signed in.
+- Settings → [Your Name] → iCloud → Photos: **ON**.
+  ("Optimize iPhone Storage" is fine.)
 
-**Option C — AirDrop in batches.** macOS Finder can AirDrop ~500
-files at a time. Tedious but works without a cable.
+**Wall-clock budget for 10k photos:**
+| Stage | Typical |
+|---|---|
+| Photos.app local ingest | 5–15 min |
+| iCloud upload | 10–30 min |
+| iPhone download / album visible | 10–30 min |
+| **Total** | **~1 hour** |
 
-Whichever option you choose, ensure all 10k photos appear in the
-**Photos** app on the device before launching the demo. The first
-launch will trigger the cold-start sync; expect indexing to take
-several minutes for 10k photos depending on the device.
+Once the album appears on the iPhone, launch the demo app. The first
+cold-start sync indexes everything (~5–10 min on iPhone 13+ release
+build).
+
+**Fallback options** (if iCloud is unavailable):
+- **AirDrop in batches.** macOS Finder caps at ~500 files per batch;
+  tedious but works without a cable.
+- **Finder Sync Photos.** Requires turning OFF iCloud Photos on the
+  iPhone first — usually not what you want for a demo phone.
 
 ## Step 4 — Run the demo queries
 

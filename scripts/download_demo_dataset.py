@@ -55,7 +55,14 @@ except ImportError:
 
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_TSV = REPO_ROOT / "data" / "unsplash_lite" / "photos.tsv000"
+DEFAULT_TSV_DIR = REPO_ROOT / "data" / "unsplash_lite"
+# Unsplash has shipped both `photos.tsv000` (older) and `photos.csv000`
+# (current) — internal format is identical (tab-separated). Accept both.
+DEFAULT_TSV_CANDIDATES = (
+    DEFAULT_TSV_DIR / "photos.tsv000",
+    DEFAULT_TSV_DIR / "photos.csv000",
+)
+DEFAULT_TSV = DEFAULT_TSV_CANDIDATES[0]  # canonical name for --tsv help text
 DEFAULT_OUT = REPO_ROOT / "data" / "demo_album"
 
 
@@ -83,11 +90,21 @@ def parse_args() -> argparse.Namespace:
 
 def load_photo_urls(tsv_path: Path) -> list[tuple[str, str]]:
     """Return list of (photo_id, photo_image_url)."""
+    # If the user-supplied / default path is missing, fall back to the
+    # other accepted filename so `photos.tsv000` ↔ `photos.csv000` are
+    # interchangeable without editing the command line.
+    if not tsv_path.exists():
+        for cand in DEFAULT_TSV_CANDIDATES:
+            if cand.exists():
+                print(f"    (using {cand.name} — {tsv_path.name} not found)")
+                tsv_path = cand
+                break
     if not tsv_path.exists():
         print(f"ERROR: TSV not found at {tsv_path}", file=sys.stderr)
         print("Download Unsplash Lite from https://unsplash.com/data/lite/latest",
               file=sys.stderr)
-        print("Unzip and place photos.tsv000 at the path above.", file=sys.stderr)
+        print("Unzip and place photos.tsv000 (or photos.csv000) at:", file=sys.stderr)
+        print(f"  {DEFAULT_TSV_DIR}/", file=sys.stderr)
         sys.exit(1)
 
     rows: list[tuple[str, str]] = []

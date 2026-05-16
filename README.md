@@ -162,8 +162,8 @@ python scripts/download_demo_dataset.py --count 10000
 # 3a. Push to Android  (~5–10 min over USB, idempotent):
 bash scripts/push_demo_to_android.sh
 
-# 3b. Push to iPhone:  open data/demo_album/ in macOS Photos.app,
-#     drag to library, then Finder → device → Sync Photos.
+# 3b. Push to iPhone via Photos.app + iCloud Photos  (~1 h end-to-end):
+bash scripts/push_demo_to_ios.sh
 ```
 
 Full guide: [`docs/demo-dataset.md`](docs/demo-dataset.md). Twenty
