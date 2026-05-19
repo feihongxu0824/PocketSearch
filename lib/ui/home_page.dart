@@ -23,7 +23,7 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   final _searchController = TextEditingController();
   final _focusNode = FocusNode();
 
@@ -42,7 +42,16 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initializeServices();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!_isInitialized) return;
+    if (state == AppLifecycleState.detached) {
+      _vectorStore.dispose();
+    }
   }
 
   Future<void> _initializeServices() async {
@@ -128,6 +137,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _searchController.dispose();
     _focusNode.dispose();
     if (_isInitialized) {

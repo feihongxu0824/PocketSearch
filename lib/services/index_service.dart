@@ -50,6 +50,7 @@ class IndexService {
     _status = IndexStatus.indexing;
     _failedCount = 0;
     _lastError = null;
+    final indexStartTime = DateTime.now();
 
     // Request permission. We ONLY need image access; the default
     // `RequestType.common` also asks for video + audio, which fails on
@@ -154,7 +155,9 @@ class IndexService {
           format: ThumbnailFormat.jpeg,
         );
         if (bytes == null || bytes.isEmpty) continue;
+        final encodeSw = Stopwatch()..start();
         final embedding = _clip.encodeImage(bytes);
+        encodeSw.stop();
 
         // Store the raw (unsanitized) asset ID as the display path.
         // On iOS the temp file from `asset.file` is a sandbox copy that
@@ -163,6 +166,7 @@ class IndexService {
         // thumbnails via `AssetEntity.fromId()` on every launch.
         final photoPath = asset.id;
 
+        final insertSw = Stopwatch()..start();
         _store.insert(
           photoId: pk,
           vector: embedding,
@@ -171,6 +175,13 @@ class IndexService {
           latitude: asset.latitude,
           longitude: asset.longitude,
         );
+        insertSw.stop();
+
+        if (_indexedCount % 100 == 0) {
+          // ignore: avoid_print
+          print('[perf-index] n=$_indexedCount encode=${encodeSw.elapsedMilliseconds}ms '
+              'insert=${insertSw.elapsedMilliseconds}ms');
+        }
 
         _indexedIds.add(pk);
         _indexedCount++;
@@ -207,6 +218,11 @@ class IndexService {
 
     // Final optimization
     _store.optimize();
+
+    final indexDuration = DateTime.now().difference(indexStartTime);
+    // ignore: avoid_print
+    print('[perf-index] COMPLETE total=$_indexedCount failed=$_failedCount '
+        'duration=${indexDuration.inSeconds}s');
 
     _status = IndexStatus.complete;
     _progressController.add(IndexProgress(

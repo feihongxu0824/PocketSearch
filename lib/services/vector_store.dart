@@ -57,8 +57,19 @@ class VectorStore {
         }
         migrated = true;
       } else {
-        // Current schema — just open the existing collection.
-        _collection = Collection.open(dbPath);
+        // Current schema — try to open; if a stale LOCK remains from a
+        // killed process, remove it and retry once.
+        try {
+          _collection = Collection.open(dbPath);
+        } catch (e) {
+          if (e.toString().contains('lock')) {
+            final lockFile = File('$dbPath/LOCK');
+            if (lockFile.existsSync()) lockFile.deleteSync();
+            _collection = Collection.open(dbPath);
+          } else {
+            rethrow;
+          }
+        }
       }
     }
 

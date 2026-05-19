@@ -74,12 +74,20 @@ class SearchService {
           '  rewrite_ms=${rewriteSw.elapsedMilliseconds}');
     }
 
+    final zvecSw = Stopwatch()..start();
     final raw = _store.query(embedding, topK: topK, filter: filterExpr);
+    zvecSw.stop();
 
     // 4. Filter by maximum distance threshold
     final results = raw.where((r) => r.score <= maxDistance).toList();
 
     totalSw.stop();
+
+    // ignore: avoid_print
+    print('[perf] query="$effective" total=${totalSw.elapsedMilliseconds}ms '
+        'zvec=${zvecSw.elapsedMilliseconds}ms '
+        'rewrite=${rewriteSw.elapsedMilliseconds}ms '
+        'results=${results.length} photos=${_store.count}');
 
     return SearchResponse(
       results: results,
