@@ -39,7 +39,7 @@ class RewriteResult {
   final String? error;
 
   /// Optional structured metadata filters (date range, geo bounding-box)
-  /// extracted by the LLM agent. `null` when mode is off, the LLM did
+  /// extracted by the LLM rewriter. `null` when mode is off, the LLM did
   /// not detect any filterable intent, or the rewriter is the legacy
   /// visual-only variant.
   final SearchFilters? filters;
@@ -101,7 +101,7 @@ class IdentityQueryRewriter implements QueryRewriter {
 /// A date-context header (`Today is YYYY-MM-DD`) is prepended at call
 /// time by [buildAgentPrompt] so the model can resolve relative dates.
 const String kAgentPromptBody = '''
-You are a photo-search query agent. Given a user query, output a JSON object.
+You are a photo-search query rewriter. Given a user query, output a JSON object.
 
 Fields:
 - "visual": 4-15 word English visual description of the photo content (REQUIRED).

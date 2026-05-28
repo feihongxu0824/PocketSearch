@@ -57,7 +57,7 @@ class _SettingsPageState extends State<SettingsPage> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _sectionHeader(context, 'LLM Query Agent (optional)'),
+          _sectionHeader(context, 'LLM Query Rewrite (optional)'),
           const SizedBox(height: 4),
           Text(
             'Expands your natural-language query into a structured search: '

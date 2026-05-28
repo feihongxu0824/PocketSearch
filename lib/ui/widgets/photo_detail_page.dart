@@ -97,14 +97,11 @@ class _PhotoDetailPageState extends State<PhotoDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final similarity = ((1 - widget.result.score) * 100).toStringAsFixed(1);
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
-        title: Text('$similarity% match',
-            style: const TextStyle(fontSize: 16)),
         actions: [
           if (!_loading)
             IconButton(

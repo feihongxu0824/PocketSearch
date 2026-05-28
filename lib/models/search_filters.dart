@@ -1,4 +1,4 @@
-/// Structured metadata filters extracted by the LLM query agent.
+/// Structured metadata filters extracted by the LLM query rewriter.
 ///
 /// When the user types something like "去年夏天海边玩的照片", the LLM
 /// produces *both* a visual description ("people playing on a sunny beach")
@@ -57,7 +57,7 @@ class SearchFilters {
     return parts.isEmpty ? null : parts.join(' AND ');
   }
 
-  /// Parse filter fields from the LLM agent JSON output.
+  /// Parse filter fields from the LLM rewriter JSON output.
   ///
   /// Accepts ISO-8601 date strings (`"2025-06-01"`) or epoch-ms integers
   /// for date fields. Missing or malformed fields are silently ignored so

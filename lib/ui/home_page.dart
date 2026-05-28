@@ -10,7 +10,6 @@ import 'package:zvec_photo_search/services/search_service.dart';
 import 'package:zvec_photo_search/services/settings_service.dart';
 import 'package:zvec_photo_search/services/tokenizer.dart';
 import 'package:zvec_photo_search/services/vector_store.dart';
-import 'package:zvec_photo_search/models/search_filters.dart';
 import 'package:zvec_photo_search/ui/settings_page.dart';
 import 'package:zvec_photo_search/ui/widgets/index_status_bar.dart';
 import 'package:zvec_photo_search/ui/widgets/photo_grid.dart';
@@ -174,25 +173,24 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
+      padding: const EdgeInsets.fromLTRB(20, 16, 12, 4),
       child: Row(
         children: [
-          Icon(
-            Icons.image_search_rounded,
-            size: 28,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-          const SizedBox(width: 10),
           Text(
-            'Zvec Photo Search',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
+            'PocketSearch',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.5,
                 ),
           ),
           const Spacer(),
           IconButton(
             tooltip: 'Settings',
-            icon: const Icon(Icons.settings_outlined),
+            icon: Icon(
+              Icons.settings_outlined,
+              color: Colors.grey[400],
+              size: 22,
+            ),
             onPressed: _isInitialized ? _openSettings : null,
           ),
         ],
@@ -208,11 +206,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         focusNode: _focusNode,
         enabled: _isInitialized,
         decoration: InputDecoration(
-          hintText: 'Describe what you are looking for...',
-          prefixIcon: const Icon(Icons.search_rounded),
+          hintText: 'Describe what you\'re looking for...',
+          hintStyle: TextStyle(color: Colors.grey[400], fontWeight: FontWeight.w400),
+          prefixIcon: Icon(Icons.search_rounded, color: Colors.grey[500]),
           suffixIcon: _searchController.text.isNotEmpty
               ? IconButton(
-                  icon: const Icon(Icons.clear),
+                  icon: Icon(Icons.clear_rounded, color: Colors.grey[400]),
                   onPressed: () {
                     _searchController.clear();
                     setState(() => _searchResponse = null);
@@ -220,11 +219,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 )
               : null,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(28),
             borderSide: BorderSide.none,
           ),
           filled: true,
-          fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+          fillColor: const Color(0xFFF2F2F7),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         ),
         textInputAction: TextInputAction.search,
         onSubmitted: _performSearch,
@@ -235,57 +235,15 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   Widget _buildTimingInfo() {
     final resp = _searchResponse!;
-    final rewrite = resp.rewrite;
-    final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.bolt_rounded, size: 14, color: theme.colorScheme.tertiary),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  'Found ${resp.results.length} results from ${resp.totalPhotos} photos '
-                  'in ${resp.queryTimeMs}ms',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.tertiary,
-                      ),
-                ),
-              ),
-            ],
-          ),
-          if (rewrite.wasRewritten)
-            Padding(
-              padding: const EdgeInsets.only(top: 2, left: 18),
-              child: Text(
-                'LLM rewrote "${rewrite.original}" → "${rewrite.effectiveQuery}" '
-                '(${resp.rewriteTimeMs}ms)',
-                style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.secondary,
-                      fontStyle: FontStyle.italic,
-                    ),
-              ),
-            ),
-          if (rewrite.wasRewritten && rewrite.filters != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 6, left: 18),
-              child: _FilterChips(filters: rewrite.filters!),
-            )
-          else if (rewrite.error != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 2, left: 18),
-              child: Text(
-                'LLM rewrite failed (${rewrite.error}); used the original query.',
-                style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.error,
-                      fontStyle: FontStyle.italic,
-                    ),
-              ),
-            ),
-        ],
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+      child: Text(
+        '${resp.results.length} results \u00b7 ${resp.queryTimeMs}ms',
+        style: TextStyle(
+          fontSize: 12,
+          color: Colors.grey[400],
+          fontWeight: FontWeight.w400,
+        ),
       ),
     );
   }
@@ -347,84 +305,5 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       _searchController.text = query;
       _performSearch(query);
     });
-  }
-}
-
-/// Visual chips that surface the structured filters extracted by the LLM
-/// agent (date range / GPS bounding box). Makes it obvious to the user
-/// (and to a demo audience) that the agent really did something.
-class _FilterChips extends StatelessWidget {
-  final SearchFilters filters;
-
-  const _FilterChips({required this.filters});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final chips = <Widget>[];
-
-    final dateLabel = _dateLabel();
-    if (dateLabel != null) {
-      chips.add(_chip(theme, Icons.calendar_today_rounded, dateLabel));
-    }
-
-    final geoLabel = _geoLabel();
-    if (geoLabel != null) {
-      chips.add(_chip(theme, Icons.location_on_rounded, geoLabel));
-    }
-
-    if (chips.isEmpty) return const SizedBox.shrink();
-    return Wrap(spacing: 6, runSpacing: 6, children: chips);
-  }
-
-  Widget _chip(ThemeData theme, IconData icon, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: theme.colorScheme.onPrimaryContainer),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onPrimaryContainer,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String? _dateLabel() {
-    if (filters.dateStartMs == null && filters.dateEndMs == null) return null;
-    final start = filters.dateStartMs != null
-        ? _fmt(filters.dateStartMs!)
-        : '...';
-    final end =
-        filters.dateEndMs != null ? _fmt(filters.dateEndMs!) : '...';
-    return '$start → $end';
-  }
-
-  String? _geoLabel() {
-    if (filters.latMin == null ||
-        filters.latMax == null ||
-        filters.lngMin == null ||
-        filters.lngMax == null) {
-      return null;
-    }
-    return 'lat ${filters.latMin!.toStringAsFixed(2)}–${filters.latMax!.toStringAsFixed(2)}, '
-        'lng ${filters.lngMin!.toStringAsFixed(2)}–${filters.lngMax!.toStringAsFixed(2)}';
-  }
-
-  static String _fmt(int ms) {
-    final d = DateTime.fromMillisecondsSinceEpoch(ms);
-    return '${d.year}-${d.month.toString().padLeft(2, '0')}'
-        '-${d.day.toString().padLeft(2, '0')}';
   }
 }

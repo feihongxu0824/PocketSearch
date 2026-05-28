@@ -35,50 +35,57 @@ class SuggestionChips extends StatelessWidget {
     final displayed = suggestions.take(8).toList();
 
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 32),
-          Icon(
-            Icons.auto_awesome_rounded,
-            size: 32,
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.6),
-          ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 40),
           Text(
             'Try searching for...',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[500],
+            ),
           ),
           const SizedBox(height: 16),
           Flexible(
             child: SingleChildScrollView(
               child: Wrap(
                 spacing: 8,
-                runSpacing: 8,
+                runSpacing: 10,
                 children: displayed.map((query) {
-                  return ActionChip(
-                    label: Text(query),
-                    onPressed: () => onTap(query),
-                    avatar: const Icon(Icons.search, size: 16),
+                  return GestureDetector(
+                    onTap: () => onTap(query),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF2F2F7),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        query,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w400,
+                          color: Color(0xFF3C3C43),
+                        ),
+                      ),
+                    ),
                   );
                 }).toList(),
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
           Center(
             child: Text(
               'Powered by zvec + MobileCLIP\nFully on-device \u2022 No cloud \u2022 Private',
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurfaceVariant
-                        .withValues(alpha: 0.5),
-                  ),
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.grey[350],
+              ),
             ),
           ),
           const SizedBox(height: 20),

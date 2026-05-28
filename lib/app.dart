@@ -7,18 +7,26 @@ class ZvecPhotoSearchApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Zvec Photo Search',
+      title: 'PocketSearch',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF6366F1),
+          seedColor: const Color(0xFF1C1C1E),
           brightness: Brightness.light,
+        ).copyWith(
+          surface: Colors.white,
         ),
+        scaffoldBackgroundColor: Colors.white,
         useMaterial3: true,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+        ),
       ),
       darkTheme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF6366F1),
+          seedColor: const Color(0xFF1C1C1E),
           brightness: Brightness.dark,
         ),
         useMaterial3: true,

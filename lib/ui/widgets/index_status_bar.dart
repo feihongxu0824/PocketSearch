@@ -60,46 +60,26 @@ class _IndexStatusBarState extends State<IndexStatusBar> {
   }
 
   Widget _buildIndexingBar(double progress, String label) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+      child: Row(
         children: [
-          Row(
-            children: [
-              SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  value: progress > 0 ? progress : null,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  label,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ),
-            ],
-          ),
-          if (_lastProgress?.lastError != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              'last error: ${_truncate(_lastProgress!.lastError!, 200)}',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.red,
-                    fontSize: 11,
-                  ),
+          SizedBox(
+            width: 14,
+            height: 14,
+            child: CircularProgressIndicator(
+              strokeWidth: 1.5,
+              value: progress > 0 ? progress : null,
+              color: Colors.grey[400],
             ),
-          ],
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+            ),
+          ),
         ],
       ),
     );
@@ -108,70 +88,39 @@ class _IndexStatusBarState extends State<IndexStatusBar> {
   Widget _buildCompletedBar() {
     final p = _lastProgress!;
     final hasFailures = p.failedCount > 0;
-    final color = hasFailures ? Colors.orange : Colors.green;
-    final icon = hasFailures
-        ? Icons.warning_amber_rounded
-        : Icons.check_circle_rounded;
     final label = hasFailures
-        ? '${p.current} indexed, ${p.failedCount} failed (out of ${p.total})'
-        : '${p.total} photos indexed and ready to search';
+        ? '${p.current} indexed, ${p.failedCount} failed'
+        : '${p.total} photos indexed';
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+      child: Row(
         children: [
-          Row(
-            children: [
-              Icon(icon, size: 16, color: color),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  label,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ),
-            ],
+          Icon(
+            hasFailures ? Icons.warning_amber_rounded : Icons.check_circle_rounded,
+            size: 14,
+            color: hasFailures ? Colors.orange : Colors.green,
           ),
-          if (hasFailures && p.lastError != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              'last error: ${_truncate(p.lastError!, 200)}',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.red,
-                    fontSize: 11,
-                  ),
-            ),
-          ],
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+          ),
         ],
       ),
     );
   }
-
-  static String _truncate(String s, int max) =>
-      s.length <= max ? s : '${s.substring(0, max)}…';
-
+  
   Widget _buildErrorBar() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.red.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
       child: Row(
         children: [
-          const Icon(Icons.error_outline, size: 16, color: Colors.red),
-          const SizedBox(width: 10),
+          const Icon(Icons.error_outline, size: 14, color: Colors.red),
+          const SizedBox(width: 8),
           Text(
-            'Photo access denied. Please grant permission in Settings.',
-            style: Theme.of(context).textTheme.bodySmall,
+            'Photo access denied. Grant permission in Settings.',
+            style: TextStyle(fontSize: 12, color: Colors.grey[500]),
           ),
         ],
       ),

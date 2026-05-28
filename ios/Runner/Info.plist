@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Zvec Photo Search</string>
+	<string>PocketSearch</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -15,7 +15,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>zvec_photo_search</string>
+	<string>PocketSearch</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -28,7 +28,7 @@
 	     indexing. The read-only key is sufficient because we never modify
 	     or write user photos. -->
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Zvec Photo Search needs access to your photo library to index your photos locally and enable offline semantic search. No photos leave your device.</string>
+	<string>PocketSearch needs access to your photo library to index your photos locally and enable offline semantic search. No photos leave your device.</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>
