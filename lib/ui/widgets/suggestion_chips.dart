@@ -58,7 +58,10 @@ class SuggestionChips extends StatelessWidget {
                   return GestureDetector(
                     onTap: () => onTap(query),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 9,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFF2F2F7),
                         borderRadius: BorderRadius.circular(20),
@@ -80,12 +83,9 @@ class SuggestionChips extends StatelessWidget {
           const SizedBox(height: 24),
           Center(
             child: Text(
-              'Powered by zvec + MobileCLIP\nFully on-device \u2022 No cloud \u2022 Private',
+              'Powered by Zvec + MobileCLIP\nFully on-device \u2022 No cloud \u2022 Private',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.grey[350],
-              ),
+              style: TextStyle(fontSize: 11, color: Colors.grey[350]),
             ),
           ),
           const SizedBox(height: 20),

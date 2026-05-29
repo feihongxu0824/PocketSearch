@@ -9,7 +9,7 @@
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20Android-lightgrey.svg)]()
 [![Flutter](https://img.shields.io/badge/Flutter-%3E%3D3.41-02569B.svg?logo=flutter)]()
-[![Engine](https://img.shields.io/badge/zvec-on--device-success.svg)](https://github.com/zvec-ai/zvec-dart)
+[![Engine](https://img.shields.io/badge/Zvec-on--device-success.svg)](https://github.com/alibaba/zvec)
 
 [English](README.md) · [中文](README_zh.md)
 
@@ -19,7 +19,7 @@
 
 ---
 
-PocketSearch 让你可以用自然语言描述一张照片，然后在本地相册里找到它 —— 不需要打标签、不需要整理文件夹、不需要数据上云。底层由 [zvec](https://github.com/zvec-ai/zvec-dart)（端侧向量数据库）+ [MobileCLIP-S1](https://github.com/apple/ml-mobileclip) 驱动，通过 [MNN](https://github.com/alibaba/MNN) 在设备本地运行。
+PocketSearch 让你可以用自然语言描述一张照片，然后在本地相册里找到它，不依赖手动整理相册，也不需要云端往返。底层由 [Zvec](https://github.com/alibaba/zvec) 及其 [Dart/Flutter SDK](https://github.com/zvec-ai/zvec-dart) + [MobileCLIP-S1](https://github.com/apple/ml-mobileclip) 驱动，通过 [MNN](https://github.com/alibaba/MNN) 在设备本地运行。
 
 ## 🎯 项目愿景
 
@@ -132,7 +132,7 @@ bash scripts/push_demo_to_android.sh
         │
         ▼
 ┌──────────────┐     ┌────────────┐     ┌────────────┐
-│ MobileCLIP   │ ──▶ │   zvec     │ ──▶ │  Top-K     │
+│ MobileCLIP   │ ──▶ │   Zvec     │ ──▶ │  Top-K     │
 │ Text Encoder │     │ HNSW+scalar│     │  Results   │
 │ (~90 ms)     │     │ (2–3 ms)   │     │            │
 └──────────────┘     └────────────┘     └────────────┘
@@ -140,11 +140,11 @@ bash scripts/push_demo_to_android.sh
 
 | 组件 | 职责 |
 |---|---|
-| [zvec](https://github.com/zvec-ai/zvec-dart) | 端侧向量数据库（HNSW + scalar 过滤）|
+| [Zvec](https://github.com/alibaba/zvec) | 端侧检索引擎（向量索引 / 检索、scalar 过滤，并可继续承载混合检索）|
 | [MNN](https://github.com/alibaba/MNN) | 移动端推理引擎 |
 | MobileCLIP-S1 | 图像 / 文本 embedding（512 维）|
 
-> 今天输入是照片、输出是排序后的结果列表。同一条 *encode → index → retrieve → fuse* 管道可以推广到备忘录、邮件、文件、截图 OCR。zvec 在检索层位置不变，上游的编码器随数据源类型演进。
+> 今天输入是照片、输出是排序后的结果列表。同一条 *encode → index → retrieve → fuse* 管道可以推广到备忘录、邮件、文件、截图 OCR。Zvec 在检索层位置不变，上游的编码器随数据源类型演进。
 
 ---
 
@@ -163,7 +163,7 @@ bash scripts/push_demo_to_android.sh
 
 ## 🔒 隐私
 
-离线保证不是一条隐私策略 —— 它是一个**架构选择**：zvec 完全不含 socket 调用，CLIP 运行在本地 MNN runtime 上。唯一可选的联网路径是 LLM 查询改写器（只发送查询文本，默认关闭）。
+离线保证不是一条隐私策略 —— 它是一个**架构选择**：Zvec 完全不含 socket 调用，CLIP 运行在本地 MNN runtime 上。唯一可选的联网路径是查询改写器（只发送查询文本，默认关闭）。
 
 ---
 

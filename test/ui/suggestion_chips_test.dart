@@ -33,6 +33,6 @@ void main() {
     );
 
     expect(find.text('Try searching for...'), findsOneWidget);
-    expect(find.textContaining('Powered by zvec'), findsOneWidget);
+    expect(find.textContaining('Powered by Zvec'), findsOneWidget);
   });
 }

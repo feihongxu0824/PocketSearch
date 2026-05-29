@@ -9,7 +9,7 @@ import 'package:pocketsearch/services/vector_store.dart';
 ///
 /// The pipeline is:
 ///   user query  ──▶  [QueryRewriter]  ──▶  tokenize  ──▶  CLIP text
-///   encoder  ──▶  zvec query  ──▶  filter by distance.
+///   encoder  ──▶  Zvec query  ──▶  filter by distance.
 ///
 /// The default rewriter is [IdentityQueryRewriter] (no-op), so the
 /// fully-offline guarantee is preserved unless the user explicitly
@@ -25,10 +25,10 @@ class SearchService {
     required VectorStore store,
     required Tokenizer tokenizer,
     QueryRewriter? rewriter,
-  })  : _clip = clip,
-        _store = store,
-        _tokenizer = tokenizer,
-        _rewriter = rewriter ?? const IdentityQueryRewriter();
+  }) : _clip = clip,
+       _store = store,
+       _tokenizer = tokenizer,
+       _rewriter = rewriter ?? const IdentityQueryRewriter();
 
   /// Hot-swap the rewriter (e.g. when the user toggles LLM in Settings).
   /// Existing in-flight searches are unaffected.
@@ -42,8 +42,11 @@ class SearchService {
   /// [maxDistance] filters out results whose cosine distance exceeds this
   /// threshold (0.0–2.0). Defaults to 0.95 — roughly cosine-similarity
   /// >= 0.05, which suppresses total noise while keeping loose matches.
-  Future<SearchResponse> search(String query,
-      {int topK = 20, double maxDistance = 0.95}) async {
+  Future<SearchResponse> search(
+    String query, {
+    int topK = 20,
+    double maxDistance = 0.95,
+  }) async {
     final totalSw = Stopwatch()..start();
 
     // 0. Optional LLM rewrite. Identity rewriter is synchronous-fast
@@ -60,18 +63,20 @@ class SearchService {
     // 2. Encode text to embedding via CLIP text encoder
     final embedding = _clip.encodeText(tokenIds);
 
-    // 3. Query zvec for nearest vectors (already sorted desc by score)
+    // 3. Query Zvec for nearest vectors (already sorted desc by score)
     final filterExpr = rewriteResult.filters?.toZvecFilter();
 
     // Debug visibility: print rewrite + filter so it is easy to diagnose
     // "why was X recalled / not recalled" without rebuilding the app.
     if (kDebugMode) {
       // ignore: avoid_print
-      print('[search] q="$query"\n'
-          '  effective="$effective"\n'
-          '  filters=${rewriteResult.filters ?? 'none'}\n'
-          '  zvec_filter=${filterExpr ?? 'none'}\n'
-          '  rewrite_ms=${rewriteSw.elapsedMilliseconds}');
+      print(
+        '[search] q="$query"\n'
+        '  effective="$effective"\n'
+        '  filters=${rewriteResult.filters ?? 'none'}\n'
+        '  zvec_filter=${filterExpr ?? 'none'}\n'
+        '  rewrite_ms=${rewriteSw.elapsedMilliseconds}',
+      );
     }
 
     final zvecSw = Stopwatch()..start();
@@ -83,11 +88,15 @@ class SearchService {
 
     totalSw.stop();
 
-    // ignore: avoid_print
-    print('[perf] query="$effective" total=${totalSw.elapsedMilliseconds}ms '
+    if (kDebugMode) {
+      // ignore: avoid_print
+      print(
+        '[perf] query="$effective" total=${totalSw.elapsedMilliseconds}ms '
         'zvec=${zvecSw.elapsedMilliseconds}ms '
         'rewrite=${rewriteSw.elapsedMilliseconds}ms '
-        'results=${results.length} photos=${_store.count}');
+        'results=${results.length} photos=${_store.count}',
+      );
+    }
 
     return SearchResponse(
       results: results,

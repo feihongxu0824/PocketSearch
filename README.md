@@ -9,7 +9,7 @@
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20Android-lightgrey.svg)]()
 [![Flutter](https://img.shields.io/badge/Flutter-%3E%3D3.41-02569B.svg?logo=flutter)]()
-[![Engine](https://img.shields.io/badge/zvec-on--device-success.svg)](https://github.com/zvec-ai/zvec-dart)
+[![Engine](https://img.shields.io/badge/Zvec-on--device-success.svg)](https://github.com/alibaba/zvec)
 
 [English](README.md) · [中文](README_zh.md)
 
@@ -19,7 +19,7 @@
 
 ---
 
-PocketSearch lets you find photos on your phone by *describing them* — no tags, no folders, no cloud round-trip. Powered by [zvec](https://github.com/zvec-ai/zvec-dart) (on-device vector DB) + [MobileCLIP-S1](https://github.com/apple/ml-mobileclip) running locally via [MNN](https://github.com/alibaba/MNN).
+PocketSearch lets you find photos on your phone by *describing them*, without manual album organization or a cloud round-trip. Powered by [Zvec](https://github.com/alibaba/zvec) and its [Dart/Flutter SDK](https://github.com/zvec-ai/zvec-dart), plus [MobileCLIP-S1](https://github.com/apple/ml-mobileclip) running locally via [MNN](https://github.com/alibaba/MNN).
 
 ## 🎯 Vision
 
@@ -133,7 +133,7 @@ bash scripts/push_demo_to_android.sh
         │
         ▼
 ┌──────────────┐     ┌────────────┐     ┌────────────┐
-│ MobileCLIP   │ ──▶ │   zvec     │ ──▶ │  Top-K     │
+│ MobileCLIP   │ ──▶ │   Zvec     │ ──▶ │  Top-K     │
 │ Text Encoder │     │ HNSW+scalar│     │  Results   │
 │ (~90 ms)     │     │ (2–3 ms)   │     │            │
 └──────────────┘     └────────────┘     └────────────┘
@@ -141,11 +141,11 @@ bash scripts/push_demo_to_android.sh
 
 | Component | Role |
 |---|---|
-| [zvec](https://github.com/zvec-ai/zvec-dart) | On-device vector database (HNSW + scalar filtering) |
+| [Zvec](https://github.com/alibaba/zvec) | On-device retrieval engine (vector indexing/search, scalar filtering, and room for hybrid retrieval) |
 | [MNN](https://github.com/alibaba/MNN) | Mobile inference engine |
 | MobileCLIP-S1 | Image/text embedding (512-dim) |
 
-> Today the input is photos and the output is a ranked image list. The same pipeline — *encode → index → retrieve → fuse* — generalises to notes, mail, files and screenshot OCR. zvec sits at the retrieval layer; the upstream encoders evolve per data source.
+> Today the input is photos and the output is a ranked image list. The same pipeline — *encode → index → retrieve → fuse* — generalises to notes, mail, files and screenshot OCR. Zvec sits at the retrieval layer; the upstream encoders evolve per data source.
 
 ---
 
@@ -164,7 +164,7 @@ Measured on iPhone SE 3 (A15), release mode, 10K photo index.
 
 ## 🔒 Privacy
 
-The offline guarantee is not a policy — it's an **architecture**: zvec has zero socket calls, CLIP runs on local MNN runtime. The only optional network path is an LLM query rewriter (sends query text only, off by default).
+The offline guarantee is not a policy — it's an **architecture**: Zvec has zero socket calls, CLIP runs on local MNN runtime. The only optional network path is a query rewriter (sends query text only, off by default).
 
 ---
 
