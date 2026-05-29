@@ -45,6 +45,10 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# iOS Xcode build output (314MB+, never commit). Flutter's default
+# .gitignore only excludes /build/ at repo root, not ios/build/.
+/ios/build/
+
 # Compiled APK/AAB outputs (the in-tree build/ dir is already ignored,
 # but a contributor may drop a pre-built artifact elsewhere).
 *.apk

@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:zvec_photo_search/services/query_rewriter.dart';
+import 'package:pocketsearch/services/query_rewriter.dart';
 
 /// Two mutually-exclusive query-rewriting modes.
 ///

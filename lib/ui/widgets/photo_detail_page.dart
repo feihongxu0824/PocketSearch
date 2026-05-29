@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:zvec_photo_search/services/vector_store.dart';
+import 'package:pocketsearch/services/vector_store.dart';
 
 /// Full-screen photo preview with native share support.
 class PhotoDetailPage extends StatefulWidget {

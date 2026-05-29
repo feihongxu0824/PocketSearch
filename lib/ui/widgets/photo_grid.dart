@@ -3,8 +3,8 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:photo_manager/photo_manager.dart';
-import 'package:zvec_photo_search/services/vector_store.dart';
-import 'package:zvec_photo_search/ui/widgets/photo_detail_page.dart';
+import 'package:pocketsearch/services/vector_store.dart';
+import 'package:pocketsearch/ui/widgets/photo_detail_page.dart';
 
 /// Displays search results in a staggered grid layout.
 class PhotoGrid extends StatelessWidget {

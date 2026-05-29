@@ -12,7 +12,7 @@
 #   macOS Photos.app  ──── iCloud Photos ────►  iPhone Photos
 #
 # Usage:
-#   bash scripts/push_demo_to_ios.sh                       # default: data/demo_album → "zvec demo"
+#   bash scripts/push_demo_to_ios.sh                       # default: data/demo_album → "PocketSearch demo"
 #   bash scripts/push_demo_to_ios.sh path/to/dir
 #   bash scripts/push_demo_to_ios.sh path/to/dir "Album Name"
 #
@@ -44,7 +44,7 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SRC_DIR="${1:-${REPO_ROOT}/data/demo_album}"
-ALBUM_NAME="${2:-zvec demo}"
+ALBUM_NAME="${2:-PocketSearch demo}"
 BATCH=200  # AppleScript event size — Photos handles ~200 files per call cleanly.
 
 if [[ "$(uname -s)" != "Darwin" ]]; then

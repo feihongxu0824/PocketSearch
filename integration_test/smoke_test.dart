@@ -17,11 +17,11 @@ import 'package:integration_test/integration_test.dart';
 import 'package:mnn/mnn.dart' as mnn;
 import 'package:path_provider/path_provider.dart';
 
-import 'package:zvec_photo_search/services/clip_service.dart';
-import 'package:zvec_photo_search/services/index_service.dart';
-import 'package:zvec_photo_search/services/tokenizer.dart';
-import 'package:zvec_photo_search/services/vector_store.dart';
-import 'package:zvec_photo_search/utils/vec_math.dart';
+import 'package:pocketsearch/services/clip_service.dart';
+import 'package:pocketsearch/services/index_service.dart';
+import 'package:pocketsearch/services/tokenizer.dart';
+import 'package:pocketsearch/services/vector_store.dart';
+import 'package:pocketsearch/utils/vec_math.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();

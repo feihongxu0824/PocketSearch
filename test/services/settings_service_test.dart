@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:zvec_photo_search/services/query_rewriter.dart';
-import 'package:zvec_photo_search/services/settings_service.dart';
+import 'package:pocketsearch/services/query_rewriter.dart';
+import 'package:pocketsearch/services/settings_service.dart';
 
 /// Verifies the three-way LlmMode dispatch in `SettingsService.buildRewriter`
 /// and the legacy bool → mode.remote migration path.

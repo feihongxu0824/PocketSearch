@@ -1,4 +1,4 @@
-name: zvec_photo_search
+name: pocketsearch
 description: "On-device semantic photo search powered by zvec + MobileCLIP"
 publish_to: 'none'
 

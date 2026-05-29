@@ -3,40 +3,59 @@
 # prepare_mnn_src.sh — fetch the MNN 3.5.0 source tree expected by the
 # `mnn` Dart package's CMake hook.
 #
-# The `mnn-0.1.3` package's `src/CMakeLists.txt` does:
+# The `mnn-0.1.3` package's `src/CMakeLists.txt` hardcodes:
 #     set(MNN_SOURCE_DIR "/tmp/mnn_src/MNN-3.5.0")
-#     add_subdirectory(${MNN_SOURCE_DIR} ...)
-# i.e. it does NOT use FetchContent — it expects the source to already
-# exist at that path. macOS clears /tmp on reboot, so `flutter test`
-# will fail with `add_subdirectory given source ".../MNN-3.5.0" which
-# is not an existing directory` until you re-run this script.
+# macOS clears /tmp on reboot. To avoid re-downloading 89 MB every time,
+# this script stores the source in ~/.cache/mnn_src/ (persistent) and
+# creates a symlink at /tmp/mnn_src → ~/.cache/mnn_src/.
 #
-# Idempotent: skips download if /tmp/mnn_src/MNN-3.5.0/CMakeLists.txt
-# already exists.
+# Idempotent: skips download if already cached; recreates symlink if needed.
 #
 # Usage:
 #   bash scripts/prepare_mnn_src.sh
 set -euo pipefail
 
 MNN_VERSION="3.5.0"
-MNN_DIR="/tmp/mnn_src/MNN-${MNN_VERSION}"
-MNN_TARBALL="/tmp/mnn_src/MNN-${MNN_VERSION}.tar.gz"
+CACHE_DIR="${HOME}/.cache/mnn_src"
+MNN_DIR="${CACHE_DIR}/MNN-${MNN_VERSION}"
+SYMLINK_TARGET="/tmp/mnn_src"
 
-# Multiple mirrors so the script also works in regions where direct
-# github.com downloads are slow or blocked. The first reachable
-# mirror with non-trivial throughput wins; later ones are fallbacks.
+# Multiple mirrors for regions where github.com is slow/blocked.
 MNN_MIRRORS=(
   "https://github.com/alibaba/MNN/archive/refs/tags/${MNN_VERSION}.tar.gz"
   "https://gh-proxy.com/https://github.com/alibaba/MNN/archive/refs/tags/${MNN_VERSION}.tar.gz"
   "https://ghfast.top/https://github.com/alibaba/MNN/archive/refs/tags/${MNN_VERSION}.tar.gz"
 )
 
+# --- Step 1: Ensure symlink /tmp/mnn_src → ~/.cache/mnn_src/ ---
+if [[ -L "${SYMLINK_TARGET}" ]]; then
+  # Symlink exists, check it points to the right place
+  if [[ "$(readlink "${SYMLINK_TARGET}")" != "${CACHE_DIR}" ]]; then
+    rm -f "${SYMLINK_TARGET}"
+    ln -s "${CACHE_DIR}" "${SYMLINK_TARGET}"
+  fi
+elif [[ -d "${SYMLINK_TARGET}" ]]; then
+  # Real directory exists (from old script); migrate contents
+  if [[ -d "${SYMLINK_TARGET}/MNN-${MNN_VERSION}" ]]; then
+    mkdir -p "${CACHE_DIR}"
+    mv "${SYMLINK_TARGET}/MNN-${MNN_VERSION}" "${CACHE_DIR}/"
+  fi
+  rm -rf "${SYMLINK_TARGET}"
+  ln -s "${CACHE_DIR}" "${SYMLINK_TARGET}"
+else
+  mkdir -p "${CACHE_DIR}"
+  ln -s "${CACHE_DIR}" "${SYMLINK_TARGET}"
+fi
+
+# --- Step 2: Download if not cached ---
 if [[ -f "${MNN_DIR}/CMakeLists.txt" ]]; then
-  echo "==> MNN ${MNN_VERSION} already prepared at ${MNN_DIR}"
+  echo "==> MNN ${MNN_VERSION} ready at ${MNN_DIR}"
+  echo "    Symlink: ${SYMLINK_TARGET} → ${CACHE_DIR}"
   exit 0
 fi
 
-mkdir -p /tmp/mnn_src
+mkdir -p "${CACHE_DIR}"
+MNN_TARBALL="${CACHE_DIR}/MNN-${MNN_VERSION}.tar.gz"
 
 download_succeeded=0
 for url in "${MNN_MIRRORS[@]}"; do
@@ -62,20 +81,20 @@ for url in "${MNN_MIRRORS[@]}"; do
 done
 
 if [[ "${download_succeeded}" -ne 1 ]]; then
-  echo "ERROR: every mirror failed. Check your network or download manually:" >&2
+  echo "ERROR: all mirrors failed. Download manually:" >&2
   echo "       ${MNN_MIRRORS[0]}" >&2
-  echo "       extract to /tmp/mnn_src/  (yields /tmp/mnn_src/MNN-${MNN_VERSION}/)" >&2
+  echo "       extract to ${CACHE_DIR}/  (yields ${MNN_DIR}/)" >&2
   exit 1
 fi
 
-echo "==> Extracting to /tmp/mnn_src/…"
-tar -xzf "${MNN_TARBALL}" -C /tmp/mnn_src/
+echo "==> Extracting…"
+tar -xzf "${MNN_TARBALL}" -C "${CACHE_DIR}/"
 rm -f "${MNN_TARBALL}"
 
 if [[ ! -f "${MNN_DIR}/CMakeLists.txt" ]]; then
-  echo "ERROR: extraction did not produce ${MNN_DIR}/CMakeLists.txt" >&2
+  echo "ERROR: extraction failed — ${MNN_DIR}/CMakeLists.txt not found" >&2
   exit 1
 fi
 
-echo "==> Done. ${MNN_DIR} is ready."
-echo "    You can now run: flutter test test/"
+echo "==> Done. MNN ${MNN_VERSION} cached at ${MNN_DIR}"
+echo "    Symlink: ${SYMLINK_TARGET} → ${CACHE_DIR}"

@@ -1,4 +1,4 @@
-package ai.zvec.zvec_photo_search
+package app.pocketsearch
 
 import io.flutter.embedding.android.FlutterActivity
 

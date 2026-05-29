@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:zvec_photo_search/services/tokenizer.dart';
+import 'package:pocketsearch/services/tokenizer.dart';
 
 /// Build a minimal CLIP-style vocab JSON string with:
 /// - a small encoder mapping

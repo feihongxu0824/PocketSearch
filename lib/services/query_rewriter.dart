@@ -3,7 +3,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-import 'package:zvec_photo_search/models/search_filters.dart';
+import 'package:pocketsearch/models/search_filters.dart';
 
 /// Strategy for rewriting a user-facing search query into something a
 /// CLIP text encoder is more likely to match against.

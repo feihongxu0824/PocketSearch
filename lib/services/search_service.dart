@@ -1,9 +1,9 @@
 import 'package:flutter/foundation.dart';
 
-import 'package:zvec_photo_search/services/clip_service.dart';
-import 'package:zvec_photo_search/services/query_rewriter.dart';
-import 'package:zvec_photo_search/services/tokenizer.dart';
-import 'package:zvec_photo_search/services/vector_store.dart';
+import 'package:pocketsearch/services/clip_service.dart';
+import 'package:pocketsearch/services/query_rewriter.dart';
+import 'package:pocketsearch/services/tokenizer.dart';
+import 'package:pocketsearch/services/vector_store.dart';
 
 /// Handles text-to-image semantic search.
 ///

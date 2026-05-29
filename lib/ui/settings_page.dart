@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:zvec_photo_search/services/settings_service.dart';
+import 'package:pocketsearch/services/settings_service.dart';
 
 /// Settings page for the optional LLM-based query rewriter.
 ///

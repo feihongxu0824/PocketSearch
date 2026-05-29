@@ -4,8 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
-import 'package:zvec_photo_search/models/search_filters.dart';
-import 'package:zvec_photo_search/services/query_rewriter.dart';
+import 'package:pocketsearch/models/search_filters.dart';
+import 'package:pocketsearch/services/query_rewriter.dart';
 
 void main() {
   group('IdentityQueryRewriter', () {

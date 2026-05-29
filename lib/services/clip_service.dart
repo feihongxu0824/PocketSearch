@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:mnn/mnn.dart' as mnn;
 import 'package:mnn/cv.dart' as cv;
 
-import 'package:zvec_photo_search/utils/vec_math.dart';
+import 'package:pocketsearch/utils/vec_math.dart';
 
 /// Service for managing MNN CLIP model lifecycle and inference.
 /// Models are loaded once at app startup and kept warm in memory.

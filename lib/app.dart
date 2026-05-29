@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:zvec_photo_search/ui/home_page.dart';
+import 'package:pocketsearch/ui/home_page.dart';
 
-class ZvecPhotoSearchApp extends StatelessWidget {
-  const ZvecPhotoSearchApp({super.key});
+class PocketSearchApp extends StatelessWidget {
+  const PocketSearchApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -24,13 +24,7 @@ class ZvecPhotoSearchApp extends StatelessWidget {
           scrolledUnderElevation: 0,
         ),
       ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF1C1C1E),
-          brightness: Brightness.dark,
-        ),
-        useMaterial3: true,
-      ),
+      themeMode: ThemeMode.light,
       home: const HomePage(),
     );
   }

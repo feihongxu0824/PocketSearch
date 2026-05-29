@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:zvec_photo_search/ui/widgets/suggestion_chips.dart';
+import 'package:pocketsearch/ui/widgets/suggestion_chips.dart';
 
 void main() {
   testWidgets('SuggestionChips renders 8 ActionChips and fires onTap',

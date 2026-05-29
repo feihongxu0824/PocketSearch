@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 
+import 'package:path_provider/path_provider.dart';
 import 'package:photo_manager/photo_manager.dart';
 
-import 'package:zvec_photo_search/services/clip_service.dart';
-import 'package:zvec_photo_search/services/vector_store.dart';
+import 'package:pocketsearch/services/clip_service.dart';
+import 'package:pocketsearch/services/vector_store.dart';
 
 /// Manages photo gallery scanning and incremental background indexing.
 class IndexService {
@@ -33,6 +36,41 @@ class IndexService {
 
   final _progressController = StreamController<IndexProgress>.broadcast();
   Stream<IndexProgress> get progressStream => _progressController.stream;
+
+  /// Last progress event handed to [_progressController]. Kept around so
+  /// UI widgets that subscribe AFTER an event was already broadcast can
+  /// still recover the latest state synchronously in their initState —
+  /// `StreamController.broadcast()` does NOT buffer events, so a late
+  /// listener would otherwise sit on `null` until the next emit.
+  IndexProgress? _lastProgress;
+  IndexProgress? get lastProgress => _lastProgress;
+
+  void _emit(IndexProgress p) {
+    _lastProgress = p;
+    _progressController.add(p);
+    // Mirror current state to a json file in the app sandbox so it can
+    // be inspected post-mortem without attaching a debugger — dart
+    // `print` does not surface to the iOS device console in release
+    // builds, and `idevicesyslog` is unreliable on iOS 17+.
+    unawaited(_dumpStatus(p));
+  }
+
+  Future<void> _dumpStatus(IndexProgress p) async {
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final f = File('${dir.path}/index_status.json');
+      await f.writeAsString(jsonEncode({
+        'status': _status.name,
+        'current': p.current,
+        'total': p.total,
+        'failed': p.failedCount,
+        'lastError': p.lastError,
+        'ts': DateTime.now().toIso8601String(),
+      }));
+    } catch (_) {
+      // Status dump is best-effort; never let it break indexing.
+    }
+  }
 
   /// Set of already indexed photo IDs to avoid re-processing.
   final Set<String> _indexedIds = {};
@@ -68,7 +106,7 @@ class IndexService {
       _status = IndexStatus.error;
       // Emit an event so listeners (e.g. IndexStatusBar) rebuild and
       // can observe the new status.
-      _progressController.add(IndexProgress(current: 0, total: 0));
+      _emit(IndexProgress(current: 0, total: 0));
       return;
     }
 
@@ -76,7 +114,7 @@ class IndexService {
     final albums = await PhotoManager.getAssetPathList(type: RequestType.image);
     if (albums.isEmpty) {
       _status = IndexStatus.complete;
-      _progressController.add(IndexProgress(current: 0, total: 0));
+      _emit(IndexProgress(current: 0, total: 0));
       return;
     }
 
@@ -127,7 +165,7 @@ class IndexService {
 
     // Emit an early progress event so the status bar updates immediately
     // (before any encoding happens) when the gallery is fully cached.
-    _progressController.add(IndexProgress(
+    _emit(IndexProgress(
       current: _indexedCount,
       total: _totalCount,
     ));
@@ -187,7 +225,7 @@ class IndexService {
         _indexedCount++;
         processedSinceOptimize++;
 
-        _progressController.add(IndexProgress(
+        _emit(IndexProgress(
           current: _indexedCount,
           total: _totalCount,
           currentPhotoPath: photoPath,
@@ -204,7 +242,7 @@ class IndexService {
         // failures — UI progress reports successful inserts only.
         _failedCount++;
         _lastError = e.toString();
-        _progressController.add(IndexProgress(
+        _emit(IndexProgress(
           current: _indexedCount,
           total: _totalCount,
           failedCount: _failedCount,
@@ -225,7 +263,7 @@ class IndexService {
         'duration=${indexDuration.inSeconds}s');
 
     _status = IndexStatus.complete;
-    _progressController.add(IndexProgress(
+    _emit(IndexProgress(
       current: _indexedCount,
       total: _totalCount,
       failedCount: _failedCount,
@@ -311,6 +349,12 @@ class IndexProgress {
     this.lastError,
   });
 
-  double get progress => total > 0 ? current / total : 0;
-  bool get isComplete => current >= total;
+  double get progress => total > 0 ? (current + failedCount) / total : 0;
+
+  /// True when every photo has been either successfully indexed or
+  /// counted as a failure. Without `+ failedCount` a single HEIC
+  /// decode error (`RangeError 65536`) on iOS would keep the bar in
+  /// "indexing" forever even though [IndexService.startIndexing] has
+  /// already returned and set status=complete.
+  bool get isComplete => (current + failedCount) >= total;
 }

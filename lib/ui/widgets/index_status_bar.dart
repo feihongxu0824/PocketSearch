@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:zvec_photo_search/services/index_service.dart';
+import 'package:pocketsearch/services/index_service.dart';
 
 /// Shows indexing progress as a compact status bar.
 class IndexStatusBar extends StatefulWidget {
@@ -20,6 +20,13 @@ class _IndexStatusBarState extends State<IndexStatusBar> {
   @override
   void initState() {
     super.initState();
+    // Seed from the service's cached last event. `progressStream` is a
+    // broadcast stream and does NOT buffer, so if startIndexing() emitted
+    // before this widget mounted (e.g. on iOS where the gallery is fully
+    // cached and the early-progress event fires very quickly), a fresh
+    // subscriber would otherwise sit on `null` indefinitely and the bar
+    // would never appear.
+    _lastProgress = widget.indexService.lastProgress;
     _subscription = widget.indexService.progressStream.listen((progress) {
       setState(() => _lastProgress = progress);
     });
@@ -39,7 +46,6 @@ class _IndexStatusBarState extends State<IndexStatusBar> {
       if (_lastProgress == null || !_lastProgress!.isComplete) {
         return const SizedBox.shrink();
       }
-      // Show completed status briefly
       return _buildCompletedBar();
     }
 

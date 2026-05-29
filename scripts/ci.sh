@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One-shot verification pipeline for zvec_photo_search.
+# One-shot verification pipeline for pocketsearch.
 # Runs: pub get → analyze → unit tests → Android debug + release → iOS release (no codesign).
 # Skips: integration_test (requires a device — run manually on a connected device).
 set -euo pipefail

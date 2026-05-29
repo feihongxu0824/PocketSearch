@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:zvec_photo_search/services/vector_store.dart';
-import 'package:zvec_photo_search/ui/widgets/photo_grid.dart';
+import 'package:pocketsearch/services/vector_store.dart';
+import 'package:pocketsearch/ui/widgets/photo_grid.dart';
 
 void main() {
   testWidgets('PhotoGrid renders a tile for each result and shows score',

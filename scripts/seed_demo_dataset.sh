@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # seed_demo_dataset.sh — push a Lorem-Picsum based demo gallery to a real
-# Android device so the zvec photo-search demo has visually meaningful
+# Android device so the PocketSearch demo has visually meaningful
 # results to rank.
 #
 # Usage:
@@ -34,9 +34,9 @@ SERIAL=""
 COUNT=220
 WIDTH=1024
 HEIGHT=768
-TMP_DIR="${TMPDIR:-/tmp}/zvec_picsum_seed"
+TMP_DIR="${TMPDIR:-/tmp}/pocketsearch_picsum_seed"
 REMOTE_DIR="/sdcard/DCIM/Camera"
-PKG="ai.zvec.zvec_photo_search"
+PKG="app.pocketsearch"
 
 while getopts "s:n:w:h:" opt; do
   case $opt in
@@ -74,7 +74,7 @@ PAD_WIDTH=$(printf '%s' "$COUNT" | wc -c | tr -d ' ')
 seq -f "%0${PAD_WIDTH}g" 1 "$COUNT" | \
   xargs -P 8 -I{} curl -sL --max-time 30 \
     -o "$TMP_DIR/picsum_{}.jpg" \
-    "https://picsum.photos/seed/zvec{}/$WIDTH/$HEIGHT"
+    "https://picsum.photos/seed/pocketsearch{}/$WIDTH/$HEIGHT"
 
 DOWNLOADED=$(find "$TMP_DIR" -maxdepth 1 -name "picsum_*.jpg" | wc -l | tr -d ' ')
 if [[ "$DOWNLOADED" != "$COUNT" ]]; then

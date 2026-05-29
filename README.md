@@ -19,16 +19,43 @@
 
 ## ⚡ Quick Start
 
+> **Prerequisites**: Flutter ≥ 3.41, Xcode 15+ (iOS only), Android SDK (Android only).
+
+### Common setup (both platforms)
+
 ```bash
 git clone git@gitlab.alibaba-inc.com:xufeihong.xfh/PocketSearch.git
 cd PocketSearch
 flutter pub get
-flutter run
+bash scripts/prepare_mnn_src.sh      # Download MNN source (~89 MB, cached in ~/.cache/)
 ```
 
-> **Prerequisites**: Flutter ≥ 3.41, Android API 24+ or iOS 16+.
+### Android
 
-### Model Preparation
+```bash
+flutter build apk --release
+adb install build/app/outputs/flutter-apk/app-release.apk
+```
+
+That's it. Open the app, grant photo permission, done.
+
+### iOS
+
+1. Open Xcode and add your Apple ID: **Xcode → Settings → Accounts → "+"**
+2. Open the workspace and configure signing:
+   ```bash
+   open ios/Runner.xcworkspace
+   ```
+   In Xcode: **Runner project → Signing & Capabilities → Team → select your account**
+3. Connect your iPhone, select it as target, and press **▶ Run**.
+4. First launch on device: go to **Settings → General → VPN & Device Management** → trust the developer certificate.
+
+> After the first Xcode build, you can also use `flutter run -d <DEVICE_ID>` for subsequent runs.
+> Find your device ID: `xcrun xctrace list devices`
+
+### Model Preparation (only if models are missing)
+
+The repo includes pre-converted `.mnn` models in `assets/models/`. If you need to re-export:
 
 ```bash
 pip install torch mobileclip onnx onnxruntime
@@ -39,7 +66,7 @@ bash scripts/convert_mnn.sh         # Convert to MNN → assets/models/
 ### Demo Dataset
 
 ```bash
-scripts/seed_demo_dataset.sh        # 220 curated photos, zero download
+bash scripts/seed_demo_dataset.sh   # 220 curated photos, zero download
 # Or full 10K Unsplash Lite:
 python scripts/download_demo_dataset.py --count 10000
 bash scripts/push_demo_to_android.sh

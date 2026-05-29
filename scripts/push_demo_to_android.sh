@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Push the demo album to a connected Android device's DCIM/zvec_demo and
+# Push the demo album to a connected Android device's DCIM/pocketsearch_demo and
 # trigger the media scanner so photo_manager / MediaStore picks them up
 # as if they were taken with the camera.
 #
@@ -19,7 +19,7 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SRC_DIR="${1:-${REPO_ROOT}/data/demo_album}"
-REMOTE_DIR="/sdcard/DCIM/zvec_demo"
+REMOTE_DIR="/sdcard/DCIM/pocketsearch_demo"
 
 if ! command -v adb >/dev/null 2>&1; then
   echo "ERROR: adb not found on PATH." >&2

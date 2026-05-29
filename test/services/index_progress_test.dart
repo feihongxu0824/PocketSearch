@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:zvec_photo_search/services/index_service.dart';
+import 'package:pocketsearch/services/index_service.dart';
 
 void main() {
   group('IndexProgress', () {
@@ -13,10 +13,16 @@ void main() {
       expect(p.progress, 0);
     });
 
-    test('isComplete when current >= total', () {
+    test('isComplete when current+failed >= total', () {
       expect(IndexProgress(current: 100, total: 100).isComplete, isTrue);
       expect(IndexProgress(current: 101, total: 100).isComplete, isTrue);
       expect(IndexProgress(current: 99, total: 100).isComplete, isFalse);
+      // Failures count toward completion: a single HEIC decode error
+      // must not pin the status bar in "indexing" forever.
+      expect(
+        IndexProgress(current: 99, total: 100, failedCount: 1).isComplete,
+        isTrue,
+      );
     });
 
     test('carries optional current photo path', () {

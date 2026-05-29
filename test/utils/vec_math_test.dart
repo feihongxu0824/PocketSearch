@@ -2,7 +2,7 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:zvec_photo_search/utils/vec_math.dart';
+import 'package:pocketsearch/utils/vec_math.dart';
 
 void main() {
   group('VecMath.l2NormalizeInPlace', () {

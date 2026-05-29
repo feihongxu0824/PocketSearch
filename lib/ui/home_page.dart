@@ -4,16 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
-import 'package:zvec_photo_search/services/clip_service.dart';
-import 'package:zvec_photo_search/services/index_service.dart';
-import 'package:zvec_photo_search/services/search_service.dart';
-import 'package:zvec_photo_search/services/settings_service.dart';
-import 'package:zvec_photo_search/services/tokenizer.dart';
-import 'package:zvec_photo_search/services/vector_store.dart';
-import 'package:zvec_photo_search/ui/settings_page.dart';
-import 'package:zvec_photo_search/ui/widgets/index_status_bar.dart';
-import 'package:zvec_photo_search/ui/widgets/photo_grid.dart';
-import 'package:zvec_photo_search/ui/widgets/suggestion_chips.dart';
+import 'package:pocketsearch/services/clip_service.dart';
+import 'package:pocketsearch/services/index_service.dart';
+import 'package:pocketsearch/services/search_service.dart';
+import 'package:pocketsearch/services/settings_service.dart';
+import 'package:pocketsearch/services/tokenizer.dart';
+import 'package:pocketsearch/services/vector_store.dart';
+import 'package:pocketsearch/ui/settings_page.dart';
+import 'package:pocketsearch/ui/widgets/index_status_bar.dart';
+import 'package:pocketsearch/ui/widgets/photo_grid.dart';
+import 'package:pocketsearch/ui/widgets/suggestion_chips.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});

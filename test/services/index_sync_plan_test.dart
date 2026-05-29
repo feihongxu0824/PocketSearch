@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:zvec_photo_search/services/index_service.dart';
+import 'package:pocketsearch/services/index_service.dart';
 
 /// Locks the cold-start sync algorithm: given (dbIds, liveIds) it must
 /// always partition dbIds into "stale" (drop) and "alreadyIndexed"
