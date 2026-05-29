@@ -4,6 +4,8 @@
 
 **Describe it. Find it. On your phone, offline.**
 
+*A unified, on-device search layer for personal data — starting with photos.*
+
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20Android-lightgrey.svg)]()
 [![Flutter](https://img.shields.io/badge/Flutter-%3E%3D3.41-02569B.svg?logo=flutter)]()
@@ -15,7 +17,19 @@
 
 ---
 
-100% offline semantic photo search powered by [zvec](https://github.com/zvec-ai/zvec-dart) + [MobileCLIP-S1](https://github.com/apple/ml-mobileclip). Natural language in, ranked photos out — no cloud, no upload, no network module.
+PocketSearch lets you find photos on your phone by *describing them* — no tags, no folders, no cloud round-trip. Powered by [zvec](https://github.com/zvec-ai/zvec-dart) (on-device vector DB) + [MobileCLIP-S1](https://github.com/apple/ml-mobileclip) running locally via [MNN](https://github.com/alibaba/MNN).
+
+## 🎯 Vision
+
+Personal data on a phone is fragmented across photos, notes, mail, messages, files and third-party apps — and most of it is too sensitive to leave the device. As mobile AI assistants get more capable, they need a **local retrieval layer** they can query without round-tripping to the cloud.
+
+PocketSearch is our take on that layer. The product principle is simple:
+
+- **Local-first.** Index, embed, retrieve and rank — all on the device. No upload, no socket calls in the default path.
+- **Multi-source.** Photos today; notes, mail, files, screenshots / OCR, third-party app data next.
+- **Dual-purpose.** A search box for humans, and a structured retrieval API for on-device agents.
+
+We started with **photos** because the gallery is the largest, fastest-growing personal corpus on most phones — screenshots, receipts, whiteboards, chat captures — and users rarely remember filenames or dates, only *what was in the picture*.
 
 ## ⚡ Quick Start
 
@@ -93,6 +107,8 @@ bash scripts/push_demo_to_android.sh
 | [MNN](https://github.com/alibaba/MNN) | Mobile inference engine |
 | MobileCLIP-S1 | Image/text embedding (512-dim) |
 
+> Today the input is photos and the output is a ranked image list. The same pipeline — *encode → index → retrieve → fuse* — generalises to notes, mail, files and screenshot OCR. zvec sits at the retrieval layer; the upstream encoders evolve per data source.
+
 ---
 
 ## 📊 Performance
@@ -116,10 +132,11 @@ The offline guarantee is not a policy — it's an **architecture**: zvec has zer
 
 ## 🗺️ Roadmap
 
-| Version | Focus |
-|---|---|
-| v0.x (current) | Semantic search, background indexing, hybrid query (vector + time + geo) |
-| v0.next | Chinese-CLIP, BM25 keyword fusion, on-device small LM |
+**Now — Photos.** Semantic search over the local gallery, background incremental indexing, hybrid query (vector + time + geo), optional LLM query rewriter (off by default).
+
+**Next — More sources.** Screenshots OCR, notes, mail, files. BM25 keyword fusion alongside vector recall. Chinese-CLIP for native CJK queries. Stable retrieval API surface so an on-device agent can call it.
+
+**Later — Unified context.** Cross-source fusion ranking, on-device summarisation of result sets, pluggable embedding models, query-time scalar filters expressed in natural language.
 
 ---
 
