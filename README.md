@@ -11,6 +11,8 @@
 [![Flutter](https://img.shields.io/badge/Flutter-%3E%3D3.41-02569B.svg?logo=flutter)]()
 [![Engine](https://img.shields.io/badge/zvec-on--device-success.svg)](https://github.com/zvec-ai/zvec-dart)
 
+[English](README.md) · [中文](README_zh.md)
+
 ![Demo](docs/assets/demo_search.gif)
 
 </div>
