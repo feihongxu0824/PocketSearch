@@ -39,9 +39,7 @@ class _PhotoTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => PhotoDetailPage(result: result),
-        ),
+        MaterialPageRoute(builder: (_) => PhotoDetailPage(result: result)),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
@@ -60,7 +58,7 @@ class _PhotoTile extends StatelessWidget {
         File(path),
         fit: BoxFit.cover,
         cacheWidth: 300,
-        errorBuilder: (_, __, ___) => _brokenPlaceholder(),
+        errorBuilder: (context, error, stackTrace) => _brokenPlaceholder(),
       );
     }
     // Load thumbnail by asset ID
@@ -76,7 +74,7 @@ class _PhotoTile extends StatelessWidget {
           snap.data!,
           fit: BoxFit.cover,
           cacheWidth: 300,
-          errorBuilder: (_, __, ___) => _brokenPlaceholder(),
+          errorBuilder: (context, error, stackTrace) => _brokenPlaceholder(),
         );
       },
     );
@@ -92,7 +90,7 @@ class _PhotoTile extends StatelessWidget {
   }
 
   static Widget _brokenPlaceholder() => Container(
-        color: Colors.grey[300],
-        child: const Icon(Icons.broken_image_rounded),
-      );
+    color: Colors.grey[300],
+    child: const Icon(Icons.broken_image_rounded),
+  );
 }

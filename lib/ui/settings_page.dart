@@ -71,19 +71,25 @@ class _SettingsPageState extends State<SettingsPage> {
           const SizedBox(height: 12),
           RadioListTile<LlmMode>(
             value: LlmMode.off,
+            // ignore: deprecated_member_use
             groupValue: s.mode,
+            // ignore: deprecated_member_use
             onChanged: (v) => v != null ? s.setMode(v) : null,
             title: const Text('Off (fully offline)'),
             subtitle: const Text(
-                'Recommended default. The CLIP encoder sees the raw query.'),
+              'Recommended default. The CLIP encoder sees the raw query.',
+            ),
           ),
           RadioListTile<LlmMode>(
             value: LlmMode.remote,
+            // ignore: deprecated_member_use
             groupValue: s.mode,
+            // ignore: deprecated_member_use
             onChanged: (v) => v != null ? s.setMode(v) : null,
             title: const Text('Remote (OpenAI-compatible API)'),
             subtitle: const Text(
-                'Sends only the query text — never photos or embeddings.'),
+              'Sends only the query text — never photos or embeddings.',
+            ),
           ),
           if (s.mode == LlmMode.remote) ..._buildRemoteSection(context),
           const SizedBox(height: 24),
@@ -91,9 +97,9 @@ class _SettingsPageState extends State<SettingsPage> {
             'Privacy: in every mode the photos, thumbnails, and vector '
             'embeddings always stay on the device. Only the search query '
             'leaves it (and only when Remote is on).',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontStyle: FontStyle.italic,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic),
           ),
         ],
       ),
@@ -132,9 +138,11 @@ class _SettingsPageState extends State<SettingsPage> {
                 hintText: 'sk-…',
                 border: const OutlineInputBorder(),
                 suffixIcon: IconButton(
-                  icon: Icon(_obscureKey
-                      ? Icons.visibility_outlined
-                      : Icons.visibility_off_outlined),
+                  icon: Icon(
+                    _obscureKey
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined,
+                  ),
                   onPressed: () => setState(() => _obscureKey = !_obscureKey),
                 ),
               ),
@@ -160,9 +168,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 s.setBaseUrl(_baseUrlCtrl.text);
                 s.setApiKey(_apiKeyCtrl.text);
                 s.setModel(_modelCtrl.text);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Saved.')),
-                );
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(const SnackBar(content: Text('Saved.')));
               },
               icon: const Icon(Icons.save_outlined),
               label: const Text('Save'),
@@ -172,10 +180,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(
                   'Missing API key — falling back to offline.',
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodySmall
-                      ?.copyWith(color: Theme.of(context).colorScheme.error),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.error,
+                  ),
                 ),
               ),
           ],
@@ -185,9 +192,9 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _sectionHeader(BuildContext context, String text) => Text(
-        text,
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-      );
+    text,
+    style: Theme.of(
+      context,
+    ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+  );
 }

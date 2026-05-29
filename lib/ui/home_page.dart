@@ -26,10 +26,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   final _searchController = TextEditingController();
   final _focusNode = FocusNode();
 
-  late ClipService _clipService;
-  late VectorStore _vectorStore;
+  ClipService? _clipService;
+  VectorStore? _vectorStore;
   late Tokenizer _tokenizer;
-  late IndexService _indexService;
+  IndexService? _indexService;
   late SearchService _searchService;
   late SettingsService _settings;
 
@@ -49,7 +49,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (!_isInitialized) return;
     if (state == AppLifecycleState.detached) {
-      _vectorStore.dispose();
+      _vectorStore?.dispose();
     }
   }
 
@@ -58,28 +58,32 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       final appDir = await getApplicationDocumentsDirectory();
 
       // Load model data from Flutter assets
-      final imageModelData = await rootBundle.load(
+      final imageModelData = await _loadRequiredModel(
         'assets/models/mobileclip_s1_image_encoder.mnn',
       );
-      final textModelData = await rootBundle.load(
+      final textModelData = await _loadRequiredModel(
         'assets/models/mobileclip_s1_text_encoder.mnn',
       );
 
       // Initialize CLIP service with model buffers
-      _clipService = ClipService.instance;
-      await _clipService.initialize(
+      final clipService = ClipService.instance;
+      await clipService.initialize(
         imageModelData: imageModelData.buffer.asUint8List(),
         textModelData: textModelData.buffer.asUint8List(),
       );
+      _clipService = clipService;
 
       // Initialize tokenizer
       _tokenizer = Tokenizer();
       await _tokenizer.load('assets/tokenizer/bpe_vocab.json');
 
       // Initialize vector store
-      _vectorStore = VectorStore();
+      final vectorStore = VectorStore();
       // ignore: unused_local_variable — migration triggers full re-index via startIndexing()
-      final migrated = await _vectorStore.initialize('${appDir.path}/zvec_photos');
+      final migrated = await vectorStore.initialize(
+        '${appDir.path}/zvec_photos',
+      );
+      _vectorStore = vectorStore;
 
       // Load persisted user settings (LLM rewriter config). When the
       // toggle is OFF or the API key is missing, buildRewriter()
@@ -90,10 +94,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       _settings.addListener(_onSettingsChanged);
 
       // Initialize services
-      _indexService = IndexService(clip: _clipService, store: _vectorStore);
+      final indexService = IndexService(clip: clipService, store: vectorStore);
+      _indexService = indexService;
       _searchService = SearchService(
-        clip: _clipService,
-        store: _vectorStore,
+        clip: clipService,
+        store: vectorStore,
         tokenizer: _tokenizer,
         rewriter: _settings.buildRewriter(),
       );
@@ -101,9 +106,24 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       setState(() => _isInitialized = true);
 
       // Start background indexing
-      _indexService.startIndexing();
+      indexService.startIndexing();
     } catch (e) {
       setState(() => _initError = e.toString());
+    }
+  }
+
+  Future<ByteData> _loadRequiredModel(String assetPath) async {
+    try {
+      return await rootBundle.load(assetPath);
+    } on FlutterError catch (_) {
+      throw StateError(
+        'Missing required model asset: $assetPath\n\n'
+        'Run these commands before building:\n'
+        '  python scripts/export_onnx.py\n'
+        '  bash scripts/convert_mnn.sh\n'
+        '  bash scripts/check_models.sh\n\n'
+        'See README.md -> Model Preparation for details.',
+      );
     }
   }
 
@@ -128,9 +148,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   void _openSettings() {
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => SettingsPage(settings: _settings),
-      ),
+      MaterialPageRoute(builder: (_) => SettingsPage(settings: _settings)),
     );
   }
 
@@ -142,9 +160,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     if (_isInitialized) {
       _settings.removeListener(_onSettingsChanged);
     }
-    _indexService.dispose();
-    _vectorStore.dispose();
-    _clipService.dispose();
+    _indexService?.dispose();
+    _vectorStore?.dispose();
+    _clipService?.dispose();
     super.dispose();
   }
 
@@ -159,8 +177,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             // Search bar
             _buildSearchBar(),
             // Index status
-            if (_isInitialized)
-              IndexStatusBar(indexService: _indexService),
+            if (_isInitialized && _indexService != null)
+              IndexStatusBar(indexService: _indexService!),
             // Search timing info
             if (_searchResponse != null) _buildTimingInfo(),
             // Results or suggestions
@@ -179,9 +197,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           Text(
             'PocketSearch',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.5,
-                ),
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.5,
+            ),
           ),
           const Spacer(),
           IconButton(
@@ -207,7 +225,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         enabled: _isInitialized,
         decoration: InputDecoration(
           hintText: 'Describe what you\'re looking for...',
-          hintStyle: TextStyle(color: Colors.grey[400], fontWeight: FontWeight.w400),
+          hintStyle: TextStyle(
+            color: Colors.grey[400],
+            fontWeight: FontWeight.w400,
+          ),
           prefixIcon: Icon(Icons.search_rounded, color: Colors.grey[500]),
           suffixIcon: _searchController.text.isNotEmpty
               ? IconButton(
@@ -224,7 +245,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           ),
           filled: true,
           fillColor: const Color(0xFFF2F2F7),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 14,
+          ),
         ),
         textInputAction: TextInputAction.search,
         onSubmitted: _performSearch,
@@ -258,8 +282,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             children: [
               const Icon(Icons.error_outline, size: 48, color: Colors.red),
               const SizedBox(height: 16),
-              Text('Initialization failed:\n$_initError',
-                  textAlign: TextAlign.center),
+              Text(
+                'Initialization failed:\n$_initError',
+                textAlign: TextAlign.center,
+              ),
             ],
           ),
         ),
@@ -301,9 +327,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     }
 
     // Default: show suggestion chips
-    return SuggestionChips(onTap: (query) {
-      _searchController.text = query;
-      _performSearch(query);
-    });
+    return SuggestionChips(
+      onTap: (query) {
+        _searchController.text = query;
+        _performSearch(query);
+      },
+    );
   }
 }

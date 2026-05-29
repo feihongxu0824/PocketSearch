@@ -2,11 +2,14 @@
 Export MobileCLIP-S1 image and text encoders to ONNX format using Apple's mobileclip.
 
 Usage (from project root):
-    python scripts/export_onnx.py
+    .venv/bin/python scripts/export_onnx.py
 
 Prerequisite:
     Download checkpoint: https://docs-assets.developer.apple.com/ml-research/datasets/mobileclip/mobileclip_s1.pt
     Place at /tmp/mobileclip_s1.pt (or modify CHECKPOINT_PATH below)
+    Install dependencies:
+        uv pip install --python .venv/bin/python torch torchvision timm open-clip-torch onnx onnxruntime MNN
+        uv pip install --python .venv/bin/python --no-deps "mobileclip @ git+https://github.com/apple/ml-mobileclip.git"
 
 Output:
     assets/models/mobileclip_s1_image_encoder.onnx
@@ -62,10 +65,6 @@ def export_image_encoder(model):
         opset_version=14,
         input_names=['image'],
         output_names=['embedding'],
-        dynamic_axes={
-            'image': {0: 'batch_size'},
-            'embedding': {0: 'batch_size'},
-        },
         dynamo=False,
     )
     size_mb = os.path.getsize(output_path) / (1024 * 1024)
@@ -88,10 +87,6 @@ def export_text_encoder(model):
         opset_version=14,
         input_names=['text'],
         output_names=['embedding'],
-        dynamic_axes={
-            'text': {0: 'batch_size'},
-            'embedding': {0: 'batch_size'},
-        },
         dynamo=False,
     )
     size_mb = os.path.getsize(output_path) / (1024 * 1024)

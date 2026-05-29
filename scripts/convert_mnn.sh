@@ -3,22 +3,32 @@
 # Convert ONNX models to MNN format with FP16 quantization.
 #
 # Prerequisites:
-#   - MNN toolkit installed (MNNConvert binary available in PATH)
+#   - MNN converter available in PATH (MNNConvert or mnnconvert from the MNN Python package)
 #   - ONNX models already exported via export_onnx.py
 #
 # Usage:
-#   bash scripts/convert_mnn.sh
+#   PATH="$PWD/.venv/bin:$PATH" bash scripts/convert_mnn.sh
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 MODEL_DIR="${SCRIPT_DIR}/../assets/models"
 
-echo "Converting ONNX models to MNN format..."
+if command -v MNNConvert >/dev/null 2>&1; then
+    MNN_CONVERT="MNNConvert"
+elif command -v mnnconvert >/dev/null 2>&1; then
+    MNN_CONVERT="mnnconvert"
+else
+    echo "ERROR: MNN converter not found. Install the MNN Python package or add MNNConvert to PATH." >&2
+    echo "       Example: uv pip install --python .venv/bin/python MNN" >&2
+    exit 1
+fi
+
+echo "Converting ONNX models to MNN format with ${MNN_CONVERT}..."
 
 # Convert image encoder
 echo "[1/2] Converting image encoder..."
-MNNConvert \
+"${MNN_CONVERT}" \
     --framework ONNX \
     --modelFile "${MODEL_DIR}/mobileclip_s1_image_encoder.onnx" \
     --MNNModel "${MODEL_DIR}/mobileclip_s1_image_encoder.mnn" \
@@ -26,7 +36,7 @@ MNNConvert \
 
 # Convert text encoder
 echo "[2/2] Converting text encoder..."
-MNNConvert \
+"${MNN_CONVERT}" \
     --framework ONNX \
     --modelFile "${MODEL_DIR}/mobileclip_s1_text_encoder.onnx" \
     --MNNModel "${MODEL_DIR}/mobileclip_s1_text_encoder.mnn" \

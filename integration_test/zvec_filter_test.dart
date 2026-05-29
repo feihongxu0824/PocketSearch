@@ -1,8 +1,9 @@
-// Integration test: verify zvec scalar filter behavior when fields are missing.
+// Integration test: verify PocketSearch's zvec scalar-filter contract.
 //
-// Hypothesis under test:
-//   Documents that are inserted WITHOUT a scalar field should NOT match a
-//   filter that references that field. (i.e. missing field == filter rejects.)
+// zvec currently treats documents with missing scalar fields as candidates
+// even when the filter references that field. PocketSearch therefore always
+// writes sentinel metadata values (created_at=0, latitude=0, longitude=0)
+// for filterable fields. These tests protect that app-level contract.
 //
 // This must run on a real device because zvec is an FFI plugin.
 //   flutter test integration_test/zvec_filter_test.dart -d <device_id>
@@ -40,27 +41,35 @@ void main() {
   setUp(() async {
     if (!Zvec.isInitialized) Zvec.initialize();
     final appDir = await getApplicationDocumentsDirectory();
-    dbPath = '${appDir.path}/zvec_filter_${DateTime.now().millisecondsSinceEpoch}';
+    dbPath =
+        '${appDir.path}/zvec_filter_${DateTime.now().millisecondsSinceEpoch}';
 
-    final schema = CollectionSchema(name: 'test_filter', fields: [
-      VectorSchema('embedding', 512, indexParams: HnswIndexParams()),
-      FieldSchema(name: 'photo_id', dataType: DataType.string),
-      FieldSchema(name: 'created_at', dataType: DataType.int64),
-      FieldSchema(name: 'latitude', dataType: DataType.float64),
-      FieldSchema(name: 'longitude', dataType: DataType.float64),
-    ]);
+    final schema = CollectionSchema(
+      name: 'test_filter',
+      fields: [
+        VectorSchema('embedding', 512, indexParams: HnswIndexParams()),
+        FieldSchema(name: 'photo_id', dataType: DataType.string),
+        FieldSchema(name: 'created_at', dataType: DataType.int64),
+        FieldSchema(name: 'latitude', dataType: DataType.float64),
+        FieldSchema(name: 'longitude', dataType: DataType.float64),
+      ],
+    );
     collection = Collection.createAndOpen(dbPath, schema);
     schema.destroy();
   });
 
   tearDown(() {
-    try { collection.close(); } catch (_) {}
+    try {
+      collection.close();
+    } catch (_) {}
     if (Directory(dbPath).existsSync()) {
       Directory(dbPath).deleteSync(recursive: true);
     }
   });
 
-  testWidgets('GEO filter: docs without lat/lng must NOT be recalled', (tester) async {
+  testWidgets('GEO filter: sentinel lat/lng docs must NOT be recalled', (
+    tester,
+  ) async {
     // Doc A: has GPS in Macau bbox
     final docA = Doc(id: 'macau_gps')
       ..setVector('embedding', _randomUnitVector(1))
@@ -77,11 +86,14 @@ void main() {
       ..setField('latitude', 31.2)
       ..setField('longitude', 121.5);
 
-    // Doc C: NO lat/lng fields (this is what real photos without GPS look like)
+    // Doc C: no real GPS. PocketSearch writes sentinel 0.0 values instead
+    // of omitting the fields, because missing fields pass zvec filters.
     final docC = Doc(id: 'no_gps')
       ..setVector('embedding', _randomUnitVector(3))
       ..setField('photo_id', 'no_gps')
-      ..setField('created_at', 1700000000000);
+      ..setField('created_at', 1700000000000)
+      ..setField('latitude', 0.0)
+      ..setField('longitude', 0.0);
 
     collection.insert([docA, docB, docC]);
     collection.optimize();
@@ -89,7 +101,8 @@ void main() {
       d.destroy();
     }
 
-    final filter = 'latitude >= 22.1 AND latitude <= 22.5 '
+    final filter =
+        'latitude >= 22.1 AND latitude <= 22.5 '
         'AND longitude >= 113.4 AND longitude <= 113.8';
 
     // Use a query vector chosen to be near every doc by L2 distance, so we
@@ -117,48 +130,59 @@ void main() {
 
     expect(ids, contains('macau_gps'));
     expect(ids, isNot(contains('shanghai_gps')));
-    expect(ids, isNot(contains('no_gps')),
-        reason: 'Doc with NO latitude/longitude fields must not pass the filter');
-  });
-
-  testWidgets('Without filter: all docs (including no-gps) should be recalled',
-      (tester) async {
-    final docA = Doc(id: 'has_gps')
-      ..setVector('embedding', _randomUnitVector(20))
-      ..setField('photo_id', 'has_gps')
-      ..setField('latitude', 22.2)
-      ..setField('longitude', 113.55);
-
-    final docB = Doc(id: 'no_gps')
-      ..setVector('embedding', _randomUnitVector(21))
-      ..setField('photo_id', 'no_gps');
-
-    collection.insert([docA, docB]);
-    collection.optimize();
-    docA.destroy();
-    docB.destroy();
-
-    final query = VectorQuery(
-      fieldName: 'embedding',
-      vector: Float32List(512),
-      topk: 100,
-      outputFields: ['photo_id'],
+    expect(
+      ids,
+      isNot(contains('no_gps')),
+      reason: 'Doc with sentinel latitude/longitude must not pass geo filter',
     );
-
-    final results = collection.query(query);
-    query.destroy();
-
-    final ids = results.map((r) => r.getString('photo_id') ?? r.pk).toSet();
-    // ignore: avoid_print
-    print('NO-FILTER RESULTS: $ids');
-
-    expect(ids, contains('has_gps'));
-    expect(ids, contains('no_gps'),
-        reason: 'Without filter both docs should be recalled');
   });
 
-  testWidgets('DATE filter: docs without created_at must NOT be recalled',
-      (tester) async {
+  testWidgets(
+    'Without filter: all docs (including no-gps) should be recalled',
+    (tester) async {
+      final docA = Doc(id: 'has_gps')
+        ..setVector('embedding', _randomUnitVector(20))
+        ..setField('photo_id', 'has_gps')
+        ..setField('latitude', 22.2)
+        ..setField('longitude', 113.55);
+
+      final docB = Doc(id: 'no_gps')
+        ..setVector('embedding', _randomUnitVector(21))
+        ..setField('photo_id', 'no_gps')
+        ..setField('latitude', 0.0)
+        ..setField('longitude', 0.0);
+
+      collection.insert([docA, docB]);
+      collection.optimize();
+      docA.destroy();
+      docB.destroy();
+
+      final query = VectorQuery(
+        fieldName: 'embedding',
+        vector: Float32List(512),
+        topk: 100,
+        outputFields: ['photo_id'],
+      );
+
+      final results = collection.query(query);
+      query.destroy();
+
+      final ids = results.map((r) => r.getString('photo_id') ?? r.pk).toSet();
+      // ignore: avoid_print
+      print('NO-FILTER RESULTS: $ids');
+
+      expect(ids, contains('has_gps'));
+      expect(
+        ids,
+        contains('no_gps'),
+        reason: 'Without filter both docs should be recalled',
+      );
+    },
+  );
+
+  testWidgets('DATE filter: sentinel created_at docs must NOT be recalled', (
+    tester,
+  ) async {
     final docA = Doc(id: 'may_2026')
       ..setVector('embedding', _randomUnitVector(30))
       ..setField('photo_id', 'may_2026')
@@ -171,7 +195,8 @@ void main() {
 
     final docC = Doc(id: 'no_date')
       ..setVector('embedding', _randomUnitVector(32))
-      ..setField('photo_id', 'no_date');
+      ..setField('photo_id', 'no_date')
+      ..setField('created_at', 0);
 
     collection.insert([docA, docB, docC]);
     collection.optimize();
@@ -198,7 +223,10 @@ void main() {
 
     expect(ids, contains('may_2026'));
     expect(ids, isNot(contains('jan_2024')));
-    expect(ids, isNot(contains('no_date')),
-        reason: 'Doc with NO created_at field must not pass date filter');
+    expect(
+      ids,
+      isNot(contains('no_date')),
+      reason: 'Doc with sentinel created_at must not pass date filter',
+    );
   });
 }

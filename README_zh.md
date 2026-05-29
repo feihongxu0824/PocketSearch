@@ -36,6 +36,7 @@ PocketSearch 就是我们对这一层的回答。产品原则很简单：
 ## ⚡ 快速开始
 
 > **环境要求**：Flutter ≥ 3.41、Xcode 15+（只要 iOS）、Android SDK（只要 Android）。
+> 如果需要从源码转换模型，还需要安装 `uv`。
 
 ### 公共准备（iOS 和 Android 都需要）
 
@@ -44,12 +45,23 @@ git clone git@gitlab.alibaba-inc.com:xufeihong.xfh/PocketSearch.git
 cd PocketSearch
 flutter pub get
 bash scripts/prepare_mnn_src.sh      # 下载 MNN 源码（约 89 MB，缓存在 ~/.cache/）
+bash scripts/check_models.sh         # 检查必需的 MobileCLIP .mnn 模型文件
 ```
+
+如果 `check_models.sh` 提示模型缺失，请先完成[模型准备](#模型准备仅当缺失时)再构建。
+Flutter 构建也会显式引用这两个模型文件，因此模型缺失时会在构建阶段失败，而不是生成一个无法正常启动的 APK/IPA。
 
 ### Android
 
 ```bash
 flutter build apk --release
+flutter install --release -d <ANDROID_DEVICE_ID>
+```
+
+也可以使用 `adb` 安装生成的 APK：
+
+```bash
+export PATH="$HOME/Library/Android/sdk/platform-tools:$PATH"   # macOS 默认 Android SDK 路径
 adb install build/app/outputs/flutter-apk/app-release.apk
 ```
 
@@ -57,8 +69,17 @@ adb install build/app/outputs/flutter-apk/app-release.apk
 
 ### iOS
 
+iOS 的 Xcode project / workspace 不提交到仓库，需要先在本地生成：
+
+```bash
+flutter create --platforms=ios --org app --project-name pocketsearch .
+cd ios && LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 pod install && cd ..
+```
+
+然后：
+
 1. 在 Xcode 里添加你的 Apple ID：**Xcode → Settings → Accounts → "+"**
-2. 打开 workspace 并配置签名：
+2. 打开生成的 workspace 并配置签名：
    ```bash
    open ios/Runner.xcworkspace
    ```
@@ -66,16 +87,31 @@ adb install build/app/outputs/flutter-apk/app-release.apk
 3. 连接 iPhone，选为目标设备，点击 **▶ Run**。
 4. 首次在设备上启动时：**设置 → 通用 → VPN 与设备管理** → 信任开发者证书。
 
-> 首次 Xcode 成功构建后，后续可以用 `flutter run -d <DEVICE_ID>` 运行。查看设备 ID：`xcrun xctrace list devices`
+> 首次 Xcode 成功构建后，后续可以用 `LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 flutter run -d <DEVICE_ID> --release` 运行。查看设备 ID：`xcrun xctrace list devices`
 
 ### 模型准备（仅当缺失时）
 
-仓库里已经预置了转换好的 `.mnn` 模型。如果需要重新导出：
+模型二进制文件较大，不提交到 git。PocketSearch 运行前需要以下两个文件：
+
+```text
+assets/models/mobileclip_s1_image_encoder.mnn
+assets/models/mobileclip_s1_text_encoder.mnn
+```
+
+如果你的分发包提供了预转换的 release assets，请下载到 `assets/models/`。否则，可以从 MobileCLIP-S1 重新导出。下面的命令使用 `uv`；如果本机还没有，可以先安装：`curl -LsSf https://astral.sh/uv/install.sh | sh`。如果网络较慢，可以按需替换 `--index-url` 镜像源。
 
 ```bash
-pip install torch mobileclip onnx onnxruntime
-python scripts/export_onnx.py      # 导出 ONNX
-bash scripts/convert_mnn.sh         # 转换为 MNN → assets/models/
+curl -L -o /tmp/mobileclip_s1.pt \
+  https://docs-assets.developer.apple.com/ml-research/datasets/mobileclip/mobileclip_s1.pt
+python3 -m venv .venv
+uv pip install --python .venv/bin/python \
+  --index-url https://pypi.tuna.tsinghua.edu.cn/simple \
+  torch torchvision timm open-clip-torch onnx onnxruntime MNN
+uv pip install --python .venv/bin/python --no-deps \
+  "mobileclip @ git+https://github.com/apple/ml-mobileclip.git"
+.venv/bin/python scripts/export_onnx.py
+PATH="$PWD/.venv/bin:$PATH" bash scripts/convert_mnn.sh
+bash scripts/check_models.sh
 ```
 
 ### 演示数据集

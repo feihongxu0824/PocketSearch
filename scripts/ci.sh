@@ -16,6 +16,9 @@ flutter --version
 log "flutter pub get"
 flutter pub get
 
+log "check MobileCLIP model assets"
+bash scripts/check_models.sh
+
 log "flutter analyze"
 flutter analyze
 
@@ -29,11 +32,16 @@ log "flutter build apk --release"
 flutter build apk --release
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
-  log "cd ios && pod install"
-  (cd ios && pod install)
+  if [[ ! -d ios/Runner.xcodeproj ]]; then
+    log "flutter create iOS scaffold"
+    flutter create --platforms=ios --org app --project-name pocketsearch .
+  fi
 
-  log "flutter build ios --release --no-codesign"
-  flutter build ios --release --no-codesign
+  log "cd ios && LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 pod install"
+  (cd ios && LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 pod install)
+
+  log "LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 flutter build ios --release --no-codesign"
+  LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 flutter build ios --release --no-codesign
 else
   echo "(skipping iOS build on non-macOS host)"
 fi
