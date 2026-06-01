@@ -1,20 +1,28 @@
 name: CI
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
   pull_request:
     branches: [main]
+
+permissions:
+  contents: read
 
 # Run only the latest commit per branch/PR; cancel in-progress runs.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  FLUTTER_VERSION: '3.41.5'
+
 jobs:
-  analyze:
-    name: Analyze (Dart static)
+  quality:
+    name: Quality gates
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
@@ -24,7 +32,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: '3.41.5'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
 
       - name: Show Flutter / Dart versions
@@ -33,8 +41,19 @@ jobs:
       - name: Resolve dependencies
         run: flutter pub get
 
+      - name: Verify lockfile is current
+        run: git diff --exit-code pubspec.lock
+
+      - name: Check Dart formatting
+        run: dart format --output=none --set-exit-if-changed lib test
+
       - name: Static analysis
+        # Model binaries are intentionally not committed; keep their asset
+        # warnings non-fatal while still failing on analyzer errors.
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Check shell script syntax
+        run: bash -n scripts/*.sh
 
       # NOTE: `flutter test` is intentionally NOT run on CI.
       #

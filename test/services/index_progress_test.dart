@@ -37,12 +37,15 @@ void main() {
 
   group('IndexStatus', () {
     test('enum has the expected states', () {
-      expect(IndexStatus.values, containsAll(<IndexStatus>[
-        IndexStatus.idle,
-        IndexStatus.indexing,
-        IndexStatus.complete,
-        IndexStatus.error,
-      ]));
+      expect(
+        IndexStatus.values,
+        containsAll(<IndexStatus>[
+          IndexStatus.idle,
+          IndexStatus.indexing,
+          IndexStatus.complete,
+          IndexStatus.error,
+        ]),
+      );
     });
   });
 }

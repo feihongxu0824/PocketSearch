@@ -28,12 +28,7 @@ String _buildMiniVocab() {
     '<|endoftext|>': 49407,
   };
 
-  final merges = <String>[
-    'c a',
-    'ca t</w>',
-    'd o',
-    'do g</w>',
-  ];
+  final merges = <String>['c a', 'ca t</w>', 'd o', 'do g</w>'];
 
   return json.encode({'encoder': encoder, 'merges': merges});
 }

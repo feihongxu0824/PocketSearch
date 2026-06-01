@@ -17,23 +17,29 @@ void main() {
       expect(plan.alreadyIndexed, isEmpty);
     });
 
-    test('first run: empty DB, gallery has photos → nothing to drop, nothing to skip', () {
-      final plan = IndexService.computeSyncPlan(
-        dbIds: const [],
-        liveIds: {'a', 'b', 'c'},
-      );
-      expect(plan.staleIds, isEmpty);
-      expect(plan.alreadyIndexed, isEmpty);
-    });
+    test(
+      'first run: empty DB, gallery has photos → nothing to drop, nothing to skip',
+      () {
+        final plan = IndexService.computeSyncPlan(
+          dbIds: const [],
+          liveIds: {'a', 'b', 'c'},
+        );
+        expect(plan.staleIds, isEmpty);
+        expect(plan.alreadyIndexed, isEmpty);
+      },
+    );
 
-    test('user wiped gallery: full DB, empty gallery → ALL stale, nothing skipped', () {
-      final plan = IndexService.computeSyncPlan(
-        dbIds: const ['a', 'b', 'c'],
-        liveIds: const {},
-      );
-      expect(plan.staleIds, equals(['a', 'b', 'c']));
-      expect(plan.alreadyIndexed, isEmpty);
-    });
+    test(
+      'user wiped gallery: full DB, empty gallery → ALL stale, nothing skipped',
+      () {
+        final plan = IndexService.computeSyncPlan(
+          dbIds: const ['a', 'b', 'c'],
+          liveIds: const {},
+        );
+        expect(plan.staleIds, equals(['a', 'b', 'c']));
+        expect(plan.alreadyIndexed, isEmpty);
+      },
+    );
 
     test('warm restart: DB == gallery → all skipped, nothing stale', () {
       final plan = IndexService.computeSyncPlan(
@@ -59,35 +65,38 @@ void main() {
       expect(plan.alreadyIndexed, equals({'b', 'd'}));
     });
 
-    test('preserves dbIds order in staleIds (deterministic delete batches)', () {
-      final plan = IndexService.computeSyncPlan(
-        dbIds: const ['z', 'y', 'x', 'w'],
-        liveIds: const {},
-      );
-      // Order matters for stable batch-delete telemetry / reproducibility.
-      expect(plan.staleIds, equals(['z', 'y', 'x', 'w']));
-    });
+    test(
+      'preserves dbIds order in staleIds (deterministic delete batches)',
+      () {
+        final plan = IndexService.computeSyncPlan(
+          dbIds: const ['z', 'y', 'x', 'w'],
+          liveIds: const {},
+        );
+        // Order matters for stable batch-delete telemetry / reproducibility.
+        expect(plan.staleIds, equals(['z', 'y', 'x', 'w']));
+      },
+    );
 
-    test('result collections are immutable (defensive against caller mutation)', () {
-      final plan = IndexService.computeSyncPlan(
-        dbIds: const ['a', 'b'],
-        liveIds: {'a'},
-      );
-      expect(() => plan.staleIds.add('x'), throwsUnsupportedError);
-      expect(() => plan.alreadyIndexed.add('x'), throwsUnsupportedError);
-    });
+    test(
+      'result collections are immutable (defensive against caller mutation)',
+      () {
+        final plan = IndexService.computeSyncPlan(
+          dbIds: const ['a', 'b'],
+          liveIds: {'a'},
+        );
+        expect(() => plan.staleIds.add('x'), throwsUnsupportedError);
+        expect(() => plan.alreadyIndexed.add('x'), throwsUnsupportedError);
+      },
+    );
 
     test('large input: 10k IDs partitioned correctly', () {
       // Sanity: linear-time algorithm shouldn't choke on production-size
       // libraries and the partition arithmetic must remain exact.
-      final dbIds =
-          List<String>.generate(10000, (i) => 'photo_$i'); // 0..9999
-      final liveIds =
-          {for (var i = 5000; i < 15000; i++) 'photo_$i'}; // 5000..14999
-      final plan = IndexService.computeSyncPlan(
-        dbIds: dbIds,
-        liveIds: liveIds,
-      );
+      final dbIds = List<String>.generate(10000, (i) => 'photo_$i'); // 0..9999
+      final liveIds = {
+        for (var i = 5000; i < 15000; i++) 'photo_$i',
+      }; // 5000..14999
+      final plan = IndexService.computeSyncPlan(dbIds: dbIds, liveIds: liveIds);
       // Stale = 0..4999 (5000 photos in DB but no longer in gallery)
       expect(plan.staleIds.length, 5000);
       expect(plan.staleIds.first, 'photo_0');

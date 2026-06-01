@@ -31,7 +31,8 @@ class Tokenizer {
     final vocabData = json.decode(vocabJson) as Map<String, dynamic>;
 
     _encoder = {};
-    for (final entry in (vocabData['encoder'] as Map<String, dynamic>).entries) {
+    for (final entry
+        in (vocabData['encoder'] as Map<String, dynamic>).entries) {
       _encoder[entry.key] = entry.value as int;
     }
 
@@ -90,7 +91,10 @@ class Tokenizer {
   List<String> _tokenizeText(String text) {
     // Simple whitespace + punctuation tokenization
     // CLIP uses a regex-based pattern, simplified here
-    final pattern = RegExp(r"'s|'t|'re|'ve|'m|'ll|'d|[\w]+|[^\s\w]+", caseSensitive: false);
+    final pattern = RegExp(
+      r"'s|'t|'re|'ve|'m|'ll|'d|[\w]+|[^\s\w]+",
+      caseSensitive: false,
+    );
     final matches = pattern.allMatches(text);
     final words = <String>[];
     for (final match in matches) {

@@ -30,8 +30,10 @@ void main() {
     test('happy path: parses chat-completions response', () async {
       final mock = MockClient((req) async {
         expect(req.method, 'POST');
-        expect(req.url.toString(),
-            'https://api.example.com/v1/chat/completions');
+        expect(
+          req.url.toString(),
+          'https://api.example.com/v1/chat/completions',
+        );
         expect(req.headers['Authorization'], 'Bearer test-key');
         final body = jsonDecode(req.body) as Map<String, dynamic>;
         expect(body['model'], 'fast-model');
@@ -46,8 +48,8 @@ void main() {
                 'message': {
                   'role': 'assistant',
                   'content': 'white cat indoors',
-                }
-              }
+                },
+              },
             ],
           }),
           200,
@@ -73,17 +75,21 @@ void main() {
     test('strips smart/straight quotes the model may add', () async {
       // Use Response.bytes with utf8-encoded body so the smart quotes
       // (U+201C / U+201D) round-trip cleanly through resp.bodyBytes.
-      final mock = MockClient((req) async => http.Response.bytes(
-            utf8.encode(jsonEncode({
+      final mock = MockClient(
+        (req) async => http.Response.bytes(
+          utf8.encode(
+            jsonEncode({
               'choices': [
                 {
-                  'message': {'content': '“sunset over the ocean”'}
-                }
-              ]
-            })),
-            200,
-            headers: {'Content-Type': 'application/json; charset=utf-8'},
-          ));
+                  'message': {'content': '“sunset over the ocean”'},
+                },
+              ],
+            }),
+          ),
+          200,
+          headers: {'Content-Type': 'application/json; charset=utf-8'},
+        ),
+      );
 
       final r = OpenAICompatibleQueryRewriter(
         baseUrl: 'https://api.example.com/v1/',
@@ -98,8 +104,9 @@ void main() {
     });
 
     test('non-200 response falls back to the original query', () async {
-      final mock = MockClient((req) async =>
-          http.Response('{"error":{"message":"bad key"}}', 401));
+      final mock = MockClient(
+        (req) async => http.Response('{"error":{"message":"bad key"}}', 401),
+      );
 
       final r = OpenAICompatibleQueryRewriter(
         baseUrl: 'https://api.example.com/v1',
@@ -132,19 +139,20 @@ void main() {
       expect(out.error, isNotNull);
     });
 
-    test('empty content from model is treated as failure (fallback)',
-        () async {
-      final mock = MockClient((req) async => http.Response(
-            jsonEncode({
-              'choices': [
-                {
-                  'message': {'content': '   '}
-                }
-              ]
-            }),
-            200,
-            headers: {'Content-Type': 'application/json; charset=utf-8'},
-          ));
+    test('empty content from model is treated as failure (fallback)', () async {
+      final mock = MockClient(
+        (req) async => http.Response(
+          jsonEncode({
+            'choices': [
+              {
+                'message': {'content': '   '},
+              },
+            ],
+          }),
+          200,
+          headers: {'Content-Type': 'application/json; charset=utf-8'},
+        ),
+      );
 
       final r = OpenAICompatibleQueryRewriter(
         baseUrl: 'https://api.example.com/v1',
@@ -160,20 +168,24 @@ void main() {
   });
   group('OpenAI rewriter: JSON agent output with filters', () {
     test('parses JSON with date filters', () async {
-      final mock = MockClient((req) async => http.Response.bytes(
-            utf8.encode(jsonEncode({
+      final mock = MockClient(
+        (req) async => http.Response.bytes(
+          utf8.encode(
+            jsonEncode({
               'choices': [
                 {
                   'message': {
                     'content':
-                        '{"visual":"people on beach","date_start":"2025-06-01","date_end":"2025-09-01"}'
-                  }
-                }
-              ]
-            })),
-            200,
-            headers: {'Content-Type': 'application/json; charset=utf-8'},
-          ));
+                        '{"visual":"people on beach","date_start":"2025-06-01","date_end":"2025-09-01"}',
+                  },
+                },
+              ],
+            }),
+          ),
+          200,
+          headers: {'Content-Type': 'application/json; charset=utf-8'},
+        ),
+      );
 
       final r = OpenAICompatibleQueryRewriter(
         baseUrl: 'https://api.example.com/v1',
@@ -192,20 +204,24 @@ void main() {
     });
 
     test('parses JSON with geo filters', () async {
-      final mock = MockClient((req) async => http.Response.bytes(
-            utf8.encode(jsonEncode({
+      final mock = MockClient(
+        (req) async => http.Response.bytes(
+          utf8.encode(
+            jsonEncode({
               'choices': [
                 {
                   'message': {
                     'content':
-                        '{"visual":"buildings in Beijing","geo":{"lat_min":39.4,"lat_max":41.1,"lng_min":115.4,"lng_max":117.5}}'
-                  }
-                }
-              ]
-            })),
-            200,
-            headers: {'Content-Type': 'application/json; charset=utf-8'},
-          ));
+                        '{"visual":"buildings in Beijing","geo":{"lat_min":39.4,"lat_max":41.1,"lng_min":115.4,"lng_max":117.5}}',
+                  },
+                },
+              ],
+            }),
+          ),
+          200,
+          headers: {'Content-Type': 'application/json; charset=utf-8'},
+        ),
+      );
 
       final r = OpenAICompatibleQueryRewriter(
         baseUrl: 'https://api.example.com/v1',
@@ -308,7 +324,7 @@ void main() {
           'lat_max': 41.1,
           'lng_min': 115.4,
           'lng_max': 117.5,
-        }
+        },
       });
       expect(f.latMin, 39.4);
       expect(f.lngMax, 117.5);
