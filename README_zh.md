@@ -134,7 +134,7 @@ bash scripts/push_demo_to_android.sh
 ┌──────────────┐     ┌────────────┐     ┌────────────┐
 │ MobileCLIP   │ ──▶ │   Zvec     │ ──▶ │  Top-K     │
 │ Text Encoder │     │ HNSW+scalar│     │  Results   │
-│ (~90 ms)     │     │ (2–3 ms)   │     │            │
+│ (~117–130 ms)│     │ (~1 ms)    │     │            │
 └──────────────┘     └────────────┘     └────────────┘
 ```
 
@@ -150,14 +150,18 @@ bash scripts/push_demo_to_android.sh
 
 ## 📊 性能
 
-在 iPhone SE 3（A15）、release 模式、索引 10K 照片的环境下测量：
+在小米 14 Ultra（Android 15）、正式构建版本、索引 `10,239` 张本地测试图片的环境下测量：
 
 | 指标 | 数值 |
 |---|---|
-| 向量检索 | **2–3 ms** |
-| 端到端搜索 | **90–120 ms** |
+| 端到端搜索 | **117–131 ms** |
+| Zvec 本地召回 | **~1 ms** |
+| Zvec 索引文件 | **24.0 MB** |
+| Zvec 索引内存增量 | **~37 MB** |
+| App 整体内存占用 | **~875 MB** |
 | 网络流量 | **0 字节** |
-| 内存（10K 向量）| 约 40 MB |
+
+App 整体内存占用包含 MobileCLIP 图像 / 文本 encoder、MNN runtime、Flutter UI、解码图片和 Zvec 索引；其中 Zvec 索引自身带来的内存增量约为 **37 MB**。
 
 ---
 

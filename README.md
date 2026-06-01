@@ -135,7 +135,7 @@ bash scripts/push_demo_to_android.sh
 ┌──────────────┐     ┌────────────┐     ┌────────────┐
 │ MobileCLIP   │ ──▶ │   Zvec     │ ──▶ │  Top-K     │
 │ Text Encoder │     │ HNSW+scalar│     │  Results   │
-│ (~90 ms)     │     │ (2–3 ms)   │     │            │
+│ (~117–130 ms)│     │ (~1 ms)    │     │            │
 └──────────────┘     └────────────┘     └────────────┘
 ```
 
@@ -151,14 +151,21 @@ bash scripts/push_demo_to_android.sh
 
 ## 📊 Performance
 
-Measured on iPhone SE 3 (A15), release mode, 10K photo index.
+Measured on Xiaomi 14 Ultra (Android 15), release build, with `10,239`
+local test photos indexed.
 
 | Metric | Value |
 |---|---|
-| Vector query | **2–3 ms** |
-| End-to-end search | **90–120 ms** |
+| End-to-end search | **117–131 ms** |
+| Zvec local retrieval | **~1 ms** |
+| Zvec index file | **24.0 MB** |
+| Zvec index memory delta | **~37 MB** |
+| App total memory footprint | **~875 MB** |
 | Network traffic | **0 bytes** |
-| Memory (10K vectors) | ~40 MB |
+
+The app-level memory number includes MobileCLIP image/text encoders, MNN
+runtime, Flutter UI, decoded images, and the Zvec index. The Zvec-specific
+index memory delta is about **37 MB** for this dataset.
 
 ---
 
