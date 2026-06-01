@@ -51,8 +51,7 @@ class SettingsService extends ChangeNotifier {
 
   /// True only when the *remote* path has both the toggle on and an
   /// API key. UI uses this to surface "enabled but missing key" warnings.
-  bool get remoteReady =>
-      _mode == LlmMode.remote && _apiKey.trim().isNotEmpty;
+  bool get remoteReady => _mode == LlmMode.remote && _apiKey.trim().isNotEmpty;
 
   Future<void> load() async {
     _prefs = await SharedPreferences.getInstance();

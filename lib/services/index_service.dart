@@ -59,14 +59,16 @@ class IndexService {
     try {
       final dir = await getApplicationDocumentsDirectory();
       final f = File('${dir.path}/index_status.json');
-      await f.writeAsString(jsonEncode({
-        'status': _status.name,
-        'current': p.current,
-        'total': p.total,
-        'failed': p.failedCount,
-        'lastError': p.lastError,
-        'ts': DateTime.now().toIso8601String(),
-      }));
+      await f.writeAsString(
+        jsonEncode({
+          'status': _status.name,
+          'current': p.current,
+          'total': p.total,
+          'failed': p.failedCount,
+          'lastError': p.lastError,
+          'ts': DateTime.now().toIso8601String(),
+        }),
+      );
     } catch (_) {
       // Status dump is best-effort; never let it break indexing.
     }
@@ -75,11 +77,9 @@ class IndexService {
   /// Set of already indexed photo IDs to avoid re-processing.
   final Set<String> _indexedIds = {};
 
-  IndexService({
-    required ClipService clip,
-    required VectorStore store,
-  })  : _clip = clip,
-        _store = store;
+  IndexService({required ClipService clip, required VectorStore store})
+    : _clip = clip,
+      _store = store;
 
   /// Start incremental indexing of the photo gallery.
   /// Emits progress events via [progressStream].
@@ -137,8 +137,10 @@ class IndexService {
       const scanPageSize = 200;
       var p = 0;
       while (true) {
-        final batch =
-            await allAlbum.getAssetListPaged(page: p, size: scanPageSize);
+        final batch = await allAlbum.getAssetListPaged(
+          page: p,
+          size: scanPageSize,
+        );
         if (batch.isEmpty) break;
         allAssets.addAll(batch);
         for (final a in batch) {
@@ -165,10 +167,7 @@ class IndexService {
 
     // Emit an early progress event so the status bar updates immediately
     // (before any encoding happens) when the gallery is fully cached.
-    _emit(IndexProgress(
-      current: _indexedCount,
-      total: _totalCount,
-    ));
+    _emit(IndexProgress(current: _indexedCount, total: _totalCount));
 
     const batchSize = 50;
     var processedSinceOptimize = 0;
@@ -217,19 +216,23 @@ class IndexService {
 
         if (_indexedCount % 100 == 0) {
           // ignore: avoid_print
-          print('[perf-index] n=$_indexedCount encode=${encodeSw.elapsedMilliseconds}ms '
-              'insert=${insertSw.elapsedMilliseconds}ms');
+          print(
+            '[perf-index] n=$_indexedCount encode=${encodeSw.elapsedMilliseconds}ms '
+            'insert=${insertSw.elapsedMilliseconds}ms',
+          );
         }
 
         _indexedIds.add(pk);
         _indexedCount++;
         processedSinceOptimize++;
 
-        _emit(IndexProgress(
-          current: _indexedCount,
-          total: _totalCount,
-          currentPhotoPath: photoPath,
-        ));
+        _emit(
+          IndexProgress(
+            current: _indexedCount,
+            total: _totalCount,
+            currentPhotoPath: photoPath,
+          ),
+        );
 
         if (processedSinceOptimize >= batchSize * 5) {
           _store.optimize();
@@ -242,12 +245,14 @@ class IndexService {
         // failures — UI progress reports successful inserts only.
         _failedCount++;
         _lastError = e.toString();
-        _emit(IndexProgress(
-          current: _indexedCount,
-          total: _totalCount,
-          failedCount: _failedCount,
-          lastError: _lastError,
-        ));
+        _emit(
+          IndexProgress(
+            current: _indexedCount,
+            total: _totalCount,
+            failedCount: _failedCount,
+            lastError: _lastError,
+          ),
+        );
         // ignore: avoid_print
         print('IndexService: encode failed for ${asset.id}: $e\n$st');
         continue;
@@ -259,17 +264,21 @@ class IndexService {
 
     final indexDuration = DateTime.now().difference(indexStartTime);
     // ignore: avoid_print
-    print('[perf-index] COMPLETE total=$_indexedCount failed=$_failedCount '
-        'duration=${indexDuration.inSeconds}s');
+    print(
+      '[perf-index] COMPLETE total=$_indexedCount failed=$_failedCount '
+      'duration=${indexDuration.inSeconds}s',
+    );
 
     _status = IndexStatus.complete;
-    _emit(IndexProgress(
-      current: _indexedCount,
-      total: _totalCount,
-      failedCount: _failedCount,
-      lastError: _lastError,
-      currentPhotoPath: null,
-    ));
+    _emit(
+      IndexProgress(
+        current: _indexedCount,
+        total: _totalCount,
+        failedCount: _failedCount,
+        lastError: _lastError,
+        currentPhotoPath: null,
+      ),
+    );
   }
 
   void dispose() {
@@ -326,10 +335,7 @@ class IndexSyncPlan {
   /// should skip them on cold start.
   final Set<String> alreadyIndexed;
 
-  const IndexSyncPlan({
-    required this.staleIds,
-    required this.alreadyIndexed,
-  });
+  const IndexSyncPlan({required this.staleIds, required this.alreadyIndexed});
 }
 
 enum IndexStatus { idle, indexing, complete, error }

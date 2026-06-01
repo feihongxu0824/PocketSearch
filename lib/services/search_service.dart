@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import 'package:pocketsearch/models/personal_source_document.dart';
 import 'package:pocketsearch/services/clip_service.dart';
 import 'package:pocketsearch/services/query_rewriter.dart';
 import 'package:pocketsearch/services/tokenizer.dart';
@@ -110,6 +111,7 @@ class SearchService {
 
 class SearchResponse {
   final List<PhotoSearchResult> results;
+  final List<TextSearchResult> textResults;
   final int queryTimeMs;
 
   /// Time spent in the optional [QueryRewriter] (0 when the rewriter is
@@ -126,7 +128,10 @@ class SearchResponse {
     required this.results,
     required this.queryTimeMs,
     required this.totalPhotos,
+    this.textResults = const [],
     this.rewriteTimeMs = 0,
     RewriteResult? rewrite,
   }) : rewrite = rewrite ?? RewriteResult.identity('');
+
+  bool get hasResults => results.isNotEmpty || textResults.isNotEmpty;
 }

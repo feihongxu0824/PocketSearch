@@ -43,16 +43,23 @@ class _PhotoTile extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
-        child: _buildImage(),
+        child: PhotoResultImage(photoPath: result.photoPath),
       ),
     );
   }
+}
 
-  Widget _buildImage() {
+class PhotoResultImage extends StatelessWidget {
+  final String photoPath;
+
+  const PhotoResultImage({super.key, required this.photoPath});
+
+  @override
+  Widget build(BuildContext context) {
     // If photoPath looks like a file path, try loading from disk (Android
     // persists real paths). Otherwise treat it as a PhotoKit / MediaStore
     // asset ID and load via photo_manager.
-    final path = result.photoPath;
+    final path = photoPath;
     if (path.startsWith('/') && File(path).existsSync()) {
       return Image.file(
         File(path),

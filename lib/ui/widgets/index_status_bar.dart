@@ -103,20 +103,19 @@ class _IndexStatusBarState extends State<IndexStatusBar> {
       child: Row(
         children: [
           Icon(
-            hasFailures ? Icons.warning_amber_rounded : Icons.check_circle_rounded,
+            hasFailures
+                ? Icons.warning_amber_rounded
+                : Icons.check_circle_rounded,
             size: 14,
             color: hasFailures ? Colors.orange : Colors.green,
           ),
           const SizedBox(width: 8),
-          Text(
-            label,
-            style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-          ),
+          Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[500])),
         ],
       ),
     );
   }
-  
+
   Widget _buildErrorBar() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),

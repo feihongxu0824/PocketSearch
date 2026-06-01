@@ -8,11 +8,12 @@ import 'package:pocketsearch/services/clip_service.dart';
 import 'package:pocketsearch/services/index_service.dart';
 import 'package:pocketsearch/services/search_service.dart';
 import 'package:pocketsearch/services/settings_service.dart';
+import 'package:pocketsearch/services/text_search_service.dart';
 import 'package:pocketsearch/services/tokenizer.dart';
 import 'package:pocketsearch/services/vector_store.dart';
 import 'package:pocketsearch/ui/settings_page.dart';
 import 'package:pocketsearch/ui/widgets/index_status_bar.dart';
-import 'package:pocketsearch/ui/widgets/photo_grid.dart';
+import 'package:pocketsearch/ui/widgets/search_results_view.dart';
 import 'package:pocketsearch/ui/widgets/suggestion_chips.dart';
 
 class HomePage extends StatefulWidget {
@@ -30,11 +31,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   VectorStore? _vectorStore;
   late Tokenizer _tokenizer;
   IndexService? _indexService;
+  late TextSearchService _textSearchService;
   late SearchService _searchService;
   late SettingsService _settings;
 
   bool _isInitialized = false;
   bool _isSearching = false;
+  bool _isSyncingSources = false;
   SearchResponse? _searchResponse;
   String? _initError;
 
@@ -96,6 +99,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       // Initialize services
       final indexService = IndexService(clip: clipService, store: vectorStore);
       _indexService = indexService;
+      _textSearchService = TextSearchService();
       _searchService = SearchService(
         clip: clipService,
         store: vectorStore,
@@ -107,6 +111,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
       // Start background indexing
       indexService.startIndexing();
+      unawaited(_syncPersonalSources());
     } catch (e) {
       setState(() => _initError = e.toString());
     }
@@ -137,7 +142,16 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
     setState(() => _isSearching = true);
 
-    final response = await _searchService.search(query.trim());
+    final photoResponse = await _searchService.search(query.trim());
+    final textResults = _textSearchService.search(query.trim());
+    final response = SearchResponse(
+      results: photoResponse.results,
+      textResults: textResults,
+      queryTimeMs: photoResponse.queryTimeMs,
+      rewriteTimeMs: photoResponse.rewriteTimeMs,
+      totalPhotos: photoResponse.totalPhotos,
+      rewrite: photoResponse.rewrite,
+    );
 
     if (!mounted) return;
     setState(() {
@@ -150,6 +164,26 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => SettingsPage(settings: _settings)),
     );
+  }
+
+  Future<void> _syncPersonalSources() async {
+    if (!_isInitialized || _isSyncingSources) return;
+    setState(() => _isSyncingSources = true);
+    try {
+      await _textSearchService.syncSystemSources();
+    } finally {
+      if (mounted) setState(() => _isSyncingSources = false);
+    }
+  }
+
+  Future<void> _importFiles() async {
+    if (!_isInitialized || _isSyncingSources) return;
+    setState(() => _isSyncingSources = true);
+    try {
+      await _textSearchService.importFiles();
+    } finally {
+      if (mounted) setState(() => _isSyncingSources = false);
+    }
   }
 
   @override
@@ -202,6 +236,33 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             ),
           ),
           const Spacer(),
+          IconButton(
+            tooltip: 'Import text files',
+            icon: Icon(
+              Icons.drive_folder_upload_outlined,
+              color: Colors.grey[400],
+              size: 22,
+            ),
+            onPressed: _isInitialized && !_isSyncingSources
+                ? _importFiles
+                : null,
+          ),
+          IconButton(
+            tooltip: 'Refresh personal sources',
+            icon: _isSyncingSources
+                ? SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.grey[400],
+                    ),
+                  )
+                : Icon(Icons.sync_rounded, color: Colors.grey[400], size: 22),
+            onPressed: _isInitialized && !_isSyncingSources
+                ? _syncPersonalSources
+                : null,
+          ),
           IconButton(
             tooltip: 'Settings',
             icon: Icon(
@@ -262,7 +323,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
       child: Text(
-        '${resp.results.length} results \u00b7 ${resp.queryTimeMs}ms',
+        '${resp.results.length + resp.textResults.length} results \u00b7 '
+        '${resp.queryTimeMs}ms',
         style: TextStyle(
           fontSize: 12,
           color: Colors.grey[400],
@@ -309,11 +371,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (_searchResponse != null && _searchResponse!.results.isNotEmpty) {
-      return PhotoGrid(results: _searchResponse!.results);
+    if (_searchResponse != null && _searchResponse!.hasResults) {
+      return SearchResultsView(
+        photoResults: _searchResponse!.results,
+        textResults: _searchResponse!.textResults,
+      );
     }
 
-    if (_searchResponse != null && _searchResponse!.results.isEmpty) {
+    if (_searchResponse != null && !_searchResponse!.hasResults) {
       return const Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,

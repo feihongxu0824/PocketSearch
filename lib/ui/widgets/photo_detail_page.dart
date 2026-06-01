@@ -33,7 +33,12 @@ class _PhotoDetailPageState extends State<PhotoDetailPage> {
     // Android: real file path
     if (path.startsWith('/') && File(path).existsSync()) {
       final bytes = await File(path).readAsBytes();
-      if (mounted) setState(() { _fullBytes = bytes; _loading = false; });
+      if (mounted) {
+        setState(() {
+          _fullBytes = bytes;
+          _loading = false;
+        });
+      }
       return;
     }
 
@@ -48,7 +53,12 @@ class _PhotoDetailPageState extends State<PhotoDetailPage> {
       format: ThumbnailFormat.jpeg,
       quality: 95,
     );
-    if (mounted) setState(() { _fullBytes = bytes; _loading = false; });
+    if (mounted) {
+      setState(() {
+        _fullBytes = bytes;
+        _loading = false;
+      });
+    }
   }
 
   Future<void> _share() async {
@@ -69,18 +79,12 @@ class _PhotoDetailPageState extends State<PhotoDetailPage> {
 
       if (shareFile != null && shareFile.existsSync()) {
         await SharePlus.instance.share(
-          ShareParams(
-            files: [XFile(shareFile.path)],
-          ),
+          ShareParams(files: [XFile(shareFile.path)]),
         );
       } else if (_fullBytes != null) {
         // Fallback: share the in-memory thumbnail
         final tmp = await _writeTempFile(_fullBytes!);
-        await SharePlus.instance.share(
-          ShareParams(
-            files: [XFile(tmp.path)],
-          ),
-        );
+        await SharePlus.instance.share(ShareParams(files: [XFile(tmp.path)]));
       }
     } finally {
       if (mounted) setState(() => _sharing = false);
@@ -90,7 +94,8 @@ class _PhotoDetailPageState extends State<PhotoDetailPage> {
   Future<File> _writeTempFile(Uint8List bytes) async {
     final dir = Directory.systemTemp;
     final file = File(
-        '${dir.path}/zvec_share_${DateTime.now().millisecondsSinceEpoch}.jpg');
+      '${dir.path}/zvec_share_${DateTime.now().millisecondsSinceEpoch}.jpg',
+    );
     await file.writeAsBytes(bytes);
     return file;
   }
@@ -137,8 +142,7 @@ class _PhotoDetailPageState extends State<PhotoDetailPage> {
           children: [
             Icon(Icons.broken_image_rounded, size: 64, color: Colors.grey),
             SizedBox(height: 12),
-            Text('Unable to load photo',
-                style: TextStyle(color: Colors.grey)),
+            Text('Unable to load photo', style: TextStyle(color: Colors.grey)),
           ],
         ),
       );
@@ -146,12 +150,7 @@ class _PhotoDetailPageState extends State<PhotoDetailPage> {
     return InteractiveViewer(
       minScale: 0.5,
       maxScale: 4.0,
-      child: Center(
-        child: Image.memory(
-          _fullBytes!,
-          fit: BoxFit.contain,
-        ),
-      ),
+      child: Center(child: Image.memory(_fullBytes!, fit: BoxFit.contain)),
     );
   }
 }

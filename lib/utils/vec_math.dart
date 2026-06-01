@@ -31,9 +31,7 @@ class VecMath {
   /// Returns 0 if either vector has zero norm.
   static double cosineSimilarity(Float32List a, Float32List b) {
     if (a.length != b.length) {
-      throw ArgumentError(
-        'Vector length mismatch: ${a.length} vs ${b.length}',
-      );
+      throw ArgumentError('Vector length mismatch: ${a.length} vs ${b.length}');
     }
     double dot = 0, na = 0, nb = 0;
     for (var i = 0; i < a.length; i++) {

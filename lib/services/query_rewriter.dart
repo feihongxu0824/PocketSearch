@@ -52,30 +52,26 @@ class RewriteResult {
     this.filters,
   });
 
-  factory RewriteResult.identity(String q) => RewriteResult(
-        original: q,
-        effectiveQuery: q,
-        wasRewritten: false,
-      );
+  factory RewriteResult.identity(String q) =>
+      RewriteResult(original: q, effectiveQuery: q, wasRewritten: false);
 
   factory RewriteResult.rewritten(
     String original,
     String rewritten, {
     SearchFilters? filters,
-  }) =>
-      RewriteResult(
-        original: original,
-        effectiveQuery: rewritten,
-        wasRewritten: original.trim() != rewritten.trim(),
-        filters: filters,
-      );
+  }) => RewriteResult(
+    original: original,
+    effectiveQuery: rewritten,
+    wasRewritten: original.trim() != rewritten.trim(),
+    filters: filters,
+  );
 
   factory RewriteResult.failed(String original, String error) => RewriteResult(
-        original: original,
-        effectiveQuery: original,
-        wasRewritten: false,
-        error: error,
-      );
+    original: original,
+    effectiveQuery: original,
+    wasRewritten: false,
+    error: error,
+  );
 }
 
 /// No-op rewriter. Used when the user has not enabled LLM rewriting.
@@ -155,10 +151,16 @@ User: photos in Paris last summer
 String buildAgentPrompt({DateTime? now}) {
   final d = now ?? DateTime.now();
   final weekday = const [
-    'Monday', 'Tuesday', 'Wednesday', 'Thursday',
-    'Friday', 'Saturday', 'Sunday',
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday',
   ][d.weekday - 1];
-  final dateStr = '${d.year}-${d.month.toString().padLeft(2, '0')}'
+  final dateStr =
+      '${d.year}-${d.month.toString().padLeft(2, '0')}'
       '-${d.day.toString().padLeft(2, '0')}';
   return 'Today is $dateStr ($weekday). Use this to resolve relative dates '
       '("last year", "yesterday", etc.).\n\n$kAgentPromptBody';
@@ -189,7 +191,8 @@ User: photos from last summer at the beach
 /// context windows. Same date injection, much shorter body.
 String buildAgentPromptLite({DateTime? now}) {
   final d = now ?? DateTime.now();
-  final dateStr = '${d.year}-${d.month.toString().padLeft(2, '0')}'
+  final dateStr =
+      '${d.year}-${d.month.toString().padLeft(2, '0')}'
       '-${d.day.toString().padLeft(2, '0')}';
   return 'Today is $dateStr.\n$kAgentPromptBodyLite';
 }
@@ -227,7 +230,14 @@ Rewrite: sunset by the sea
 /// that some LLMs add despite the prompt forbidding it.
 String stripWrappingQuotes(String s) {
   var out = s;
-  final pairs = ['"', "'", '\u201c\u201d', '\u2018\u2019', '\u300c\u300d', '\u300e\u300f'];
+  final pairs = [
+    '"',
+    "'",
+    '\u201c\u201d',
+    '\u2018\u2019',
+    '\u300c\u300d',
+    '\u300e\u300f',
+  ];
   for (final p in pairs) {
     if (p.length == 1) {
       if (out.startsWith(p) && out.endsWith(p) && out.length >= 2) {

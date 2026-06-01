@@ -13,9 +13,7 @@ class PocketSearchApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF1C1C1E),
           brightness: Brightness.light,
-        ).copyWith(
-          surface: Colors.white,
-        ),
+        ).copyWith(surface: Colors.white),
         scaffoldBackgroundColor: Colors.white,
         useMaterial3: true,
         appBarTheme: const AppBarTheme(

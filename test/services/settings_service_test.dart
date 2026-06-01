@@ -33,51 +33,49 @@ void main() {
       expect(s.buildRewriter(), isA<IdentityQueryRewriter>());
     });
 
-    test('LlmMode.remote with API key builds OpenAICompatibleQueryRewriter',
-        () async {
-      SharedPreferences.setMockInitialValues({
-        'llm.mode': LlmMode.remote.name,
-        'llm.rewriter.baseUrl': 'https://api.example.com/v1',
-        'llm.rewriter.apiKey': 'sk-test',
-        'llm.rewriter.model': 'gpt-4o-mini',
-      });
-      final s = SettingsService();
-      await s.load();
+    test(
+      'LlmMode.remote with API key builds OpenAICompatibleQueryRewriter',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'llm.mode': LlmMode.remote.name,
+          'llm.rewriter.baseUrl': 'https://api.example.com/v1',
+          'llm.rewriter.apiKey': 'sk-test',
+          'llm.rewriter.model': 'gpt-4o-mini',
+        });
+        final s = SettingsService();
+        await s.load();
 
-      expect(s.remoteReady, isTrue);
-      expect(s.buildRewriter(), isA<OpenAICompatibleQueryRewriter>());
-    });
+        expect(s.remoteReady, isTrue);
+        expect(s.buildRewriter(), isA<OpenAICompatibleQueryRewriter>());
+      },
+    );
 
-    test('legacy LlmMode.local pref migrates to LlmMode.off (local LLM removed)',
-        () async {
-      // Older app versions may have persisted the now-removed 'local' enum
-      // value. The settings loader must coerce it back to off so the user
-      // does not get stuck without a working rewriter.
-      SharedPreferences.setMockInitialValues({
-        'llm.mode': 'local',
-      });
-      final s = SettingsService();
-      await s.load();
+    test(
+      'legacy LlmMode.local pref migrates to LlmMode.off (local LLM removed)',
+      () async {
+        // Older app versions may have persisted the now-removed 'local' enum
+        // value. The settings loader must coerce it back to off so the user
+        // does not get stuck without a working rewriter.
+        SharedPreferences.setMockInitialValues({'llm.mode': 'local'});
+        final s = SettingsService();
+        await s.load();
 
-      expect(s.mode, LlmMode.off);
-      expect(s.buildRewriter(), isA<IdentityQueryRewriter>());
-    });
+        expect(s.mode, LlmMode.off);
+        expect(s.buildRewriter(), isA<IdentityQueryRewriter>());
+      },
+    );
   });
 
   group('SettingsService legacy migration', () {
     test('absent mode + legacy bool=true migrates to LlmMode.remote', () async {
-      SharedPreferences.setMockInitialValues({
-        'llm.rewriter.enabled': true,
-      });
+      SharedPreferences.setMockInitialValues({'llm.rewriter.enabled': true});
       final s = SettingsService();
       await s.load();
       expect(s.mode, LlmMode.remote);
     });
 
     test('absent mode + legacy bool=false migrates to LlmMode.off', () async {
-      SharedPreferences.setMockInitialValues({
-        'llm.rewriter.enabled': false,
-      });
+      SharedPreferences.setMockInitialValues({'llm.rewriter.enabled': false});
       final s = SettingsService();
       await s.load();
       expect(s.mode, LlmMode.off);

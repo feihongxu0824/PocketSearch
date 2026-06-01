@@ -92,8 +92,7 @@ class SearchFilters {
   String toDisplayString() {
     final parts = <String>[];
     if (dateStartMs != null || dateEndMs != null) {
-      final start =
-          dateStartMs != null ? _formatDate(dateStartMs!) : '...';
+      final start = dateStartMs != null ? _formatDate(dateStartMs!) : '...';
       final end = dateEndMs != null ? _formatDate(dateEndMs!) : '...';
       parts.add('$start ~ $end');
     }

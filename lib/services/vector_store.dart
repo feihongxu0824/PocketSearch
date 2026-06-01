@@ -74,15 +74,18 @@ class VectorStore {
     }
 
     if (_collection == null) {
-      final schema = CollectionSchema(name: 'photo_embeddings', fields: [
-        VectorSchema('embedding', 512, indexParams: HnswIndexParams()),
-        FieldSchema(name: 'photo_id', dataType: DataType.string),
-        FieldSchema(name: 'photo_path', dataType: DataType.string),
-        FieldSchema(name: 'indexed_at', dataType: DataType.int64),
-        FieldSchema(name: 'created_at', dataType: DataType.int64),
-        FieldSchema(name: 'latitude', dataType: DataType.float64),
-        FieldSchema(name: 'longitude', dataType: DataType.float64),
-      ]);
+      final schema = CollectionSchema(
+        name: 'photo_embeddings',
+        fields: [
+          VectorSchema('embedding', 512, indexParams: HnswIndexParams()),
+          FieldSchema(name: 'photo_id', dataType: DataType.string),
+          FieldSchema(name: 'photo_path', dataType: DataType.string),
+          FieldSchema(name: 'indexed_at', dataType: DataType.int64),
+          FieldSchema(name: 'created_at', dataType: DataType.int64),
+          FieldSchema(name: 'latitude', dataType: DataType.float64),
+          FieldSchema(name: 'longitude', dataType: DataType.float64),
+        ],
+      );
       try {
         _collection = Collection.createAndOpen(dbPath, schema);
       } finally {
@@ -135,7 +138,11 @@ class VectorStore {
   ///
   /// When [filter] is non-null it is passed as a zvec scalar-filter
   /// expression (e.g. `'created_at >= 1717200000000 AND created_at < 1725148800000'`).
-  List<PhotoSearchResult> query(Float32List vector, {int topK = 20, String? filter}) {
+  List<PhotoSearchResult> query(
+    Float32List vector, {
+    int topK = 20,
+    String? filter,
+  }) {
     assert(_initialized, 'VectorStore not initialized');
 
     final vq = VectorQuery(
@@ -150,11 +157,13 @@ class VectorStore {
     final output = <PhotoSearchResult>[];
 
     for (final doc in results) {
-      output.add(PhotoSearchResult(
-        photoId: doc.getString('photo_id') ?? doc.pk ?? '',
-        photoPath: doc.getString('photo_path') ?? '',
-        score: doc.score,
-      ));
+      output.add(
+        PhotoSearchResult(
+          photoId: doc.getString('photo_id') ?? doc.pk ?? '',
+          photoPath: doc.getString('photo_path') ?? '',
+          score: doc.score,
+        ),
+      );
     }
 
     vq.destroy();

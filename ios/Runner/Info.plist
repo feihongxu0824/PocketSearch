@@ -29,6 +29,14 @@
 	     or write user photos. -->
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>PocketSearch needs access to your photo library to index your photos locally and enable offline semantic search. No photos leave your device.</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>PocketSearch needs calendar access to index your events locally and make them searchable on device. No calendar data leaves your device.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>PocketSearch needs calendar access to index your events locally and make them searchable on device. No calendar data leaves your device.</string>
+	<key>NSRemindersFullAccessUsageDescription</key>
+	<string>PocketSearch needs reminders access to index your reminders locally and make them searchable on device. No reminders leave your device.</string>
+	<key>NSRemindersUsageDescription</key>
+	<string>PocketSearch needs reminders access to index your reminders locally and make them searchable on device. No reminders leave your device.</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

@@ -62,7 +62,10 @@ class ClipService {
 
     // Decode, resize, normalize, and convert to planar (CHW) using MNN cv
     // MobileCLIP-S1 uses no per-channel normalization, just scale to [0,1]
-    final im = cv.Image.fromBytes(imageBytes, desiredChannel: cv.StbiChannel.rgb);
+    final im = cv.Image.fromBytes(
+      imageBytes,
+      desiredChannel: cv.StbiChannel.rgb,
+    );
     final resized = im.resize(256, 256);
     const mean = [0.0, 0.0, 0.0];
     const std = [1.0, 1.0, 1.0];
